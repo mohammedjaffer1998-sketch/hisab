@@ -303,7 +303,7 @@ input:focus,select:focus{outline:none;border-color:var(--brand)}
         <div class="auth-ok" id="s-ok"></div>
       </div>
       <div class="auth-note">By signing up you agree to our <a href="#">Terms of Service</a></div>
-      <div class="sb-setup" id="sb-setup-box">
+      <div class="sb-setup">
         <strong>⚙ First time? Connect your Supabase project</strong>
         <input type="text" id="sb-url" placeholder="https://xxxx.supabase.co">
         <input type="password" id="sb-key" placeholder="sb_publishable_xxxx... (anon key only)">
@@ -342,6 +342,8 @@ create policy "own" on transactions for all
     </div>
     <div class="h-right">
       <span class="saved-tag" id="save-tag">✓ Saved</span>
+      <div class="status-pill"><div class="sdot" id="db-dot"></div><span id="db-lbl">Supabase</span></div>
+      <div class="status-pill"><div class="sdot" id="cl-dot"></div><span id="cl-lbl" style="font-size:.72em">Claude</span></div>
       <div class="user-chip"><div class="u-av" id="u-av">?</div><span id="u-email">—</span></div>
       <button class="btn-logout" onclick="doLogout()">Sign Out</button>
     </div>
@@ -349,12 +351,15 @@ create policy "own" on transactions for all
 
   <div style="background:var(--brand-xlight);border-bottom:1px solid var(--border);padding:7px 24px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:.76em;color:var(--brand)">
   <span style="background:var(--brand);color:var(--gold);font-size:.78em;font-weight:700;padding:2px 9px;border-radius:10px;letter-spacing:.04em">AI AGENT</span>
-  Powered by <strong>Hisab AI</strong> — reads invoices autonomously in under 3 seconds &nbsp;·&nbsp;
+  Powered by <strong>Claude claude-sonnet-4-5</strong> — reads invoices autonomously in under 3 seconds &nbsp;·&nbsp;
   <span style="font-family:'Noto Naskh Arabic',serif;font-size:.95em">مدعوم بالذكاء الاصطناعي</span>
 </div>
 <div class="container">
-    <!-- Claude API key is set by developer in DEVELOPER CONFIG above — not shown to clients -->
-    <div id="cl-banner" style="display:none"></div>
+    <div class="claude-banner" id="cl-banner" style="display:none">
+      <strong>Connect Claude API key:</strong>
+      <input type="password" id="cl-input" placeholder="sk-ant-api03-..." oninput="checkClaude(this.value)">
+      <button class="btn btn-brand btn-sm" onclick="saveClaude()">Save Key</button>
+    </div>
 
     <div class="tabs">
       <div class="tab active"  onclick="showTab('upload')">📄 Single Upload</div>
@@ -382,30 +387,6 @@ create policy "own" on transactions for all
         <div id="proc-area" style="margin-top:14px"></div>
         <div id="res-area"></div>
       </div>
-
-      <!-- RECENT TRANSACTIONS WIDGET -->
-      <div class="card" id="recent-card">
-        <h2 style="display:flex;align-items:center;justify-content:space-between">
-          <span>Recent Transactions</span>
-          <button onclick="showTab('dash')" style="background:none;border:none;font-size:.78em;color:var(--brand);font-weight:600;cursor:pointer;padding:0">View All →</button>
-        </h2>
-        <div id="recent-list">
-          <div style="text-align:center;padding:28px;color:var(--text-muted);font-size:.84em">
-            <div style="font-size:2em;margin-bottom:10px">📄</div>
-            No transactions yet — upload your first invoice above
-          </div>
-        </div>
-      </div>
-
-      <!-- QUICK STATS STRIP -->
-      <div id="quick-stats" style="display:none;margin-bottom:16px">
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-          <div class="kp kp-inc"><div class="kl">This Month Income</div><div class="kv" id="qs-inc">AED 0</div></div>
-          <div class="kp kp-exp"><div class="kl">This Month Expenses</div><div class="kv" id="qs-exp">AED 0</div></div>
-          <div class="kp kp-amb"><div class="kl">VAT Payable</div><div class="kv" id="qs-vat">AED 0</div></div>
-        </div>
-      </div>
-
     </div>
 
     <!-- BATCH -->
@@ -767,12 +748,9 @@ function toggleVerify(rid) {
 //  DEVELOPER CONFIG — fill these once before deploying to clients
 //  Clients never see these — they only see the login screen
 // ══════════════════════════════════════════════════════════════
-var SUPABASE_URL = "";  // e.g. "https://xxxx.supabase.co"
-var SUPABASE_KEY = "";  // e.g. "sb_publishable_xxxx"
-var CLAUDE_API_KEY = "";  // e.g. "sk-ant-api03-xxxx" — your Claude key
-// Auto-load Claude key on startup
-if (CLAUDE_API_KEY) { var AK = CLAUDE_API_KEY; }
-
+var SUPABASE_URL = "";
+var SUPABASE_KEY = "";
+var CLAUDE_API_KEY =""; // Set this in your deployment environment variables
 // ══ STATE ══
 var AK="",txns=[],bq=[],bqTs=0,zCfg=null,zHist=[],sb=null,cu=null,CON=3,EXB=50;
 
@@ -943,12 +921,14 @@ function initSB() {
     attachAuthListener(sb);
     chkSession();
     // Hide setup box if credentials are hardcoded
-    var box = document.getElementById("sb-setup-box");
-    if(box) box.style.display = (SUPABASE_URL && SUPABASE_KEY) ? "none" : "block";
+    if (SUPABASE_URL && SUPABASE_KEY) {
+      var box = document.querySelector(".sb-setup");
+      if(box) box.style.display = "none";
+    }
   }
 })();
 
-function enterApp(){document.getElementById("auth-screen").style.display="none";document.getElementById("app-screen").style.display="block";var em=cu?cu.email:"";document.getElementById("u-email").textContent=em.split("@")[0];document.getElementById("u-av").textContent=em.charAt(0).toUpperCase();document.getElementById("m-date").value=today();loadZoho();var ck=localStorage.getItem("cl_key");if(ck){AK=ck;checkClaude(ck);document.getElementById("cl-banner").style.display="none";}else{document.getElementById("cl-banner").style.display="flex";}loadTxns();log("Welcome back, "+em+" — loading data...","s");setTimeout(renderRecentActivity,800);}
+function enterApp(){document.getElementById("auth-screen").style.display="none";document.getElementById("app-screen").style.display="block";var em=cu?cu.email:"";document.getElementById("u-email").textContent=em.split("@")[0];document.getElementById("u-av").textContent=em.charAt(0).toUpperCase();document.getElementById("db-dot").className="sdot on";document.getElementById("db-lbl").textContent="Supabase ✓";document.getElementById("m-date").value=today();loadZoho();var ck=localStorage.getItem("cl_key");if(ck){AK=ck;checkClaude(ck);document.getElementById("cl-banner").style.display="none";}else{document.getElementById("cl-banner").style.display="flex";}loadTxns();log("Welcome back, "+em+" — loading data...","s");}
 
 // ══ SUPABASE DATA ══
 async function loadTxns(){
@@ -956,7 +936,7 @@ async function loadTxns(){
   if(!sb){
     log("Database not connected — transactions will not be saved to cloud.","w");
     return;
-  }var{data,error}=await sb.from("transactions").select("*").eq("user_id",cu.id).order("created_at",{ascending:false});if(error){log("Load error: "+error.message,"e");return;}txns=(data||[]).map(function(r){return{id:r.id,date:r.date,vendor:r.vendor||"",description:r.description||"",amount:r.amount||0,type:r.type,category:r.category,vat:{applicable:r.vat_applicable,rate:r.vat_rate||0,amount:r.vat_amount||0},gross:r.gross||0,status:r.status||"pending",flagged:r.flagged||false,flagReason:r.flag_reason||"",zoho_status:r.zoho_status||null,zoho_number:r.zoho_number||null,source:r.source||""};});log("Loaded "+txns.length+" transactions.","s");renderTable();renderZQ();updateStats();renderRecent();}
+  }var{data,error}=await sb.from("transactions").select("*").eq("user_id",cu.id).order("created_at",{ascending:false});if(error){log("Load error: "+error.message,"e");return;}txns=(data||[]).map(function(r){return{id:r.id,date:r.date,vendor:r.vendor||"",description:r.description||"",amount:r.amount||0,type:r.type,category:r.category,vat:{applicable:r.vat_applicable,rate:r.vat_rate||0,amount:r.vat_amount||0},gross:r.gross||0,status:r.status||"pending",flagged:r.flagged||false,flagReason:r.flag_reason||"",zoho_status:r.zoho_status||null,zoho_number:r.zoho_number||null,source:r.source||""};});log("Loaded "+txns.length+" transactions.","s");renderTable();renderZQ();updateStats();}
 async function saveTxn(t){if(!sb||!cu){log("Saved locally only — Supabase not connected.","w");return;}var row={id:t.id,user_id:cu.id,date:t.date,vendor:t.vendor,description:t.description,amount:t.amount,type:t.type,category:t.category,vat_applicable:t.vat.applicable,vat_rate:t.vat.rate,vat_amount:t.vat.amount,gross:t.gross,status:t.status,flagged:t.flagged,flag_reason:t.flagReason,zoho_status:t.zoho_status||null,zoho_number:t.zoho_number||null,source:t.source};var{error}=await sb.from("transactions").upsert(row);if(error)log("Save error: "+error.message,"e");else showSaved();}
 async function delTxnDB(id){if(!sb||!cu)return;await sb.from("transactions").delete().eq("id",id).eq("user_id",cu.id);}
 async function updTxnDB(t){if(!sb||!cu)return;await sb.from("transactions").update({zoho_status:t.zoho_status,zoho_number:t.zoho_number,status:t.status,flagged:t.flagged,flag_reason:t.flagReason}).eq("id",t.id).eq("user_id",cu.id);}
@@ -1064,12 +1044,11 @@ async function chkSession(){
 }
 
 // ══ CLAUDE KEY ══
-function checkClaude(v){var ok=v.startsWith("sk-ant-")&&v.length>40;document.getElementById("cl-lbl").textContent=ok?"Claude ✓":"Claude";}
-function saveClaude(){ /* key managed by developer config */ }
+function checkClaude(v){var ok=v.startsWith("sk-ant-")&&v.length>40;document.getElementById("cl-dot").className="sdot"+(ok?" on":"");document.getElementById("cl-lbl").textContent=ok?"Claude ✓":"Claude";}
+function saveClaude(){var v=document.getElementById("cl-input").value.trim();if(!v.startsWith("sk-ant-")||v.length<40){alert("Invalid Claude API key.");return;}AK=v;localStorage.setItem("cl_key",v);document.getElementById("cl-banner").style.display="none";checkClaude(v);log("Claude API key saved.");}
 
 // ══ TABS ══
-function showTab(n){document.querySelectorAll(".section").forEach(function(s){s.classList.remove("active");});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");});document.getElementById("tab-"+n).classList.add("active");
-  if(n==="upload") renderRecentActivity();var m={upload:0,batch:1,dash:2,vat:3,manual:4,zoho:5};document.querySelectorAll(".tab")[m[n]].classList.add("active");if(n==="zoho"){renderZQ();renderZH();}}
+function showTab(n){document.querySelectorAll(".section").forEach(function(s){s.classList.remove("active");});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");});document.getElementById("tab-"+n).classList.add("active");var m={upload:0,batch:1,dash:2,vat:3,manual:4,zoho:5};document.querySelectorAll(".tab")[m[n]].classList.add("active");if(n==="zoho"){renderZQ();renderZH();}}
 
 // ══ DRAG DROP ══
 var dz=document.querySelector(".upload-zone");if(dz){dz.addEventListener("dragover",function(e){e.preventDefault();});dz.addEventListener("drop",function(e){e.preventDefault();handleFiles(e.dataTransfer.files);});}
@@ -1153,11 +1132,11 @@ function showResult(d,fn,verifyReport){
 
 function sf(n,l,t,v){var e=esc(v),inp;if(t==="stype")inp='<select name="'+n+'"><option value="expense"'+(v==="expense"?" selected":"")+'>Expense</option><option value="income"'+(v==="income"?" selected":"")+'>Income</option></select>';else if(t==="svat")inp='<select name="'+n+'"><option value="yes"'+(v==="yes"?" selected":"")+'>Yes — 5%</option><option value="no"'+(v==="no"?" selected":"")+'>No</option></select>';else inp='<input type="'+(t==="number"?"number":"text")+'" name="'+n+'" value="'+e+'">';return'<div class="fi"><label>'+l+'</label>'+inp+'</div>';}
 function colSingle(rid){var card=document.getElementById("rc-"+rid),g=function(n){var el=card.querySelector('[name="'+n+'"]');return el?el.value:"";};var a=parseFloat(g("amt"))||0,va=parseFloat(g("vat"))||0,vf=g("vf")==="yes";return{id:uid(),date:g("date")||today(),amount:parseFloat(a.toFixed(2)),type:g("type"),category:g("cat"),vendor:g("vendor")||"Unknown",description:g("desc"),vat:{applicable:vf,rate:vf?5:0,amount:parseFloat(va.toFixed(2))},gross:parseFloat((a+va).toFixed(2)),source:"claude",status:"pending",flagged:false,flagReason:"",zoho_status:null};}
-async function addSingle(rid){var t=colSingle(rid);txns.push(t);document.getElementById("rc-"+rid).remove();await saveTxn(t);log("Saved: "+t.vendor+" AED "+t.amount);renderTable();renderZQ();updateStats();renderRecentActivity();showTab("dash");}
-async function addAndSync(rid){var t=colSingle(rid);txns.push(t);document.getElementById("rc-"+rid).remove();await saveTxn(t);log("Saved: "+t.vendor+" AED "+t.amount);renderTable();renderZQ();updateStats();renderRecentActivity();showTab("dash");await syncOne(t.id);}
+async function addSingle(rid){var t=colSingle(rid);txns.push(t);document.getElementById("rc-"+rid).remove();await saveTxn(t);log("Saved: "+t.vendor+" AED "+t.amount);renderTable();renderZQ();updateStats();showTab("dash");}
+async function addAndSync(rid){var t=colSingle(rid);txns.push(t);document.getElementById("rc-"+rid).remove();await saveTxn(t);log("Saved: "+t.vendor+" AED "+t.amount);renderTable();renderZQ();updateStats();showTab("dash");await syncOne(t.id);}
 
 // ══ EXCEL READER ══
-function rdXLS(file){log("Excel: reading "+file.name);var r=new FileReader();r.onload=async function(e){try{var wb=XLSX.read(e.target.result,{type:"binary",cellDates:true}),ws=wb.Sheets[wb.SheetNames[0]],rows=XLSX.utils.sheet_to_json(ws,{defval:""});log("Excel: "+rows.length+" rows");var all=[],bts=Math.ceil(rows.length/EXB);for(var b=0;b<bts;b++){var batch=rows.slice(b*EXB,(b+1)*EXB),pid=uid();mkProc(file.name+" (batch "+(b+1)+"/"+bts+")",pid,"Claude...");var pr="UAE accounting assistant. Return ONLY JSON array. Each: {date,vendor,description,amount,type,category,vat_applicable}. type: income=credit, expense=debit. category: sales_invoice|service_invoice|export_sales|indirect_income|purchase_supplier|utility|salary_wps|rent|marketing|travel_transport|professional_fees|maintenance_repairs|bank_charges|insurance|customs_import|other. amount: positive. date: YYYY-MM-DD.\n\nDATA:\n"+JSON.stringify(batch);try{var res=await clFetch(pr);var cl=res.replace(/```json|```/g,"").trim(),mt=cl.match(/\[[\s\S]*\]/);if(mt)cl=mt[0];var ps=JSON.parse(cl);ps.forEach(function(item){var amt=parseFloat(item.amount)||0,vf=!!item.vat_applicable,va=vf?parseFloat((amt*.05).toFixed(2)):0;if(amt<=0)return;all.push({id:uid(),date:item.date||today(),amount:parseFloat(amt.toFixed(2)),type:item.type||"expense",category:normCat(item.category,item.type),vendor:item.vendor||"Unknown",description:item.description||"",vat:{applicable:vf,rate:vf?5:0,amount:va},gross:parseFloat((amt+va).toFixed(2)),source:"excel",status:"pending",flagged:false,flagReason:"",zoho_status:null});});rmProc(pid);}catch(be){log("Batch error: "+be.message,"e");rmProc(pid);}}for(var k=0;k<all.length;k++){txns.push(all[k]);await saveTxn(all[k]);}log("Excel: "+all.length+" transactions saved");renderTable();renderZQ();updateStats();renderRecentActivity();showTab("dash");}catch(ex){log("Excel error: "+ex.message,"e");}};r.readAsBinaryString(file);}
+function rdXLS(file){log("Excel: reading "+file.name);var r=new FileReader();r.onload=async function(e){try{var wb=XLSX.read(e.target.result,{type:"binary",cellDates:true}),ws=wb.Sheets[wb.SheetNames[0]],rows=XLSX.utils.sheet_to_json(ws,{defval:""});log("Excel: "+rows.length+" rows");var all=[],bts=Math.ceil(rows.length/EXB);for(var b=0;b<bts;b++){var batch=rows.slice(b*EXB,(b+1)*EXB),pid=uid();mkProc(file.name+" (batch "+(b+1)+"/"+bts+")",pid,"Claude...");var pr="UAE accounting assistant. Return ONLY JSON array. Each: {date,vendor,description,amount,type,category,vat_applicable}. type: income=credit, expense=debit. category: sales_invoice|service_invoice|export_sales|indirect_income|purchase_supplier|utility|salary_wps|rent|marketing|travel_transport|professional_fees|maintenance_repairs|bank_charges|insurance|customs_import|other. amount: positive. date: YYYY-MM-DD.\n\nDATA:\n"+JSON.stringify(batch);try{var res=await clFetch(pr);var cl=res.replace(/```json|```/g,"").trim(),mt=cl.match(/\[[\s\S]*\]/);if(mt)cl=mt[0];var ps=JSON.parse(cl);ps.forEach(function(item){var amt=parseFloat(item.amount)||0,vf=!!item.vat_applicable,va=vf?parseFloat((amt*.05).toFixed(2)):0;if(amt<=0)return;all.push({id:uid(),date:item.date||today(),amount:parseFloat(amt.toFixed(2)),type:item.type||"expense",category:normCat(item.category,item.type),vendor:item.vendor||"Unknown",description:item.description||"",vat:{applicable:vf,rate:vf?5:0,amount:va},gross:parseFloat((amt+va).toFixed(2)),source:"excel",status:"pending",flagged:false,flagReason:"",zoho_status:null});});rmProc(pid);}catch(be){log("Batch error: "+be.message,"e");rmProc(pid);}}for(var k=0;k<all.length;k++){txns.push(all[k]);await saveTxn(all[k]);}log("Excel: "+all.length+" transactions saved");renderTable();renderZQ();updateStats();showTab("dash");}catch(ex){log("Excel error: "+ex.message,"e");}};r.readAsBinaryString(file);}
 
 // ══ BATCH ══
 async function startBatch(files){if(!AK){alert("Enter Claude API key first.");return;}if(!files||!files.length)return;bq=[];bqTs=Date.now();for(var i=0;i<files.length;i++){var ex=files[i].name.split(".").pop().toLowerCase();if(["pdf","jpg","jpeg","png"].indexOf(ex)===-1)continue;bq.push({id:uid(),file:files[i],name:files[i].name,size:files[i].size,status:"queued",result:null,error:null});}if(!bq.length){alert("No supported files.");return;}document.getElementById("b-overview").style.display="block";document.getElementById("bq-card").style.display="block";document.getElementById("exp-bar").style.display="none";document.getElementById("seg-results").style.display="none";document.getElementById("bp-tot").textContent=bq.length;renderBQ();log("Batch: "+bq.length+" files","b");var idx=0;async function nxt(){if(idx>=bq.length)return;var item=bq[idx++];await procFile(item);updBStats();await nxt();}var w=[];for(var j=0;j<Math.min(CON,bq.length);j++)w.push(nxt());await Promise.all(w);var el=((Date.now()-bqTs)/1000).toFixed(1);log("Batch done — "+bq.filter(function(q){return q.status==="done";}).length+" done — "+el+"s","b");document.getElementById("bp-time").textContent=el+"s";document.getElementById("exp-bar").style.display="flex";renderSegs();}
@@ -1176,106 +1155,18 @@ async function addBatchToLedger(){var done=bq.filter(function(q){return q.status
 async function addBatchAndSync(){await addBatchToLedger();await bulkSync();}
 function clearBatch(){if(!confirm("Clear batch results?"))return;bq=[];document.getElementById("b-overview").style.display="none";document.getElementById("bq-card").style.display="none";document.getElementById("exp-bar").style.display="none";document.getElementById("seg-results").style.display="none";document.getElementById("q-body").innerHTML="";log("Batch cleared","b");}
 
-
-// ══ RECENT TRANSACTIONS ON UPLOAD TAB ══
-function renderRecent() {
-  var list = document.getElementById("recent-list");
-  var qs   = document.getElementById("quick-stats");
-  if (!list) return;
-
-  if (!txns.length) {
-    list.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted);font-size:.84em"><div style="font-size:2em;margin-bottom:10px">📄</div>No transactions yet — upload your first invoice above</div>';
-    if (qs) qs.style.display = "none";
-    return;
-  }
-
-  // Show quick stats
-  if (qs) {
-    var now   = new Date();
-    var month = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
-    var mInc  = txns.filter(function(t){return t.type==="income"&&t.date&&t.date.startsWith(month);}).reduce(function(s,t){return s+t.amount;},0);
-    var mExp  = txns.filter(function(t){return t.type==="expense"&&t.date&&t.date.startsWith(month);}).reduce(function(s,t){return s+t.amount;},0);
-    var vat   = buildVAT();
-    document.getElementById("qs-inc").textContent = "AED "+Math.round(mInc).toLocaleString();
-    document.getElementById("qs-exp").textContent = "AED "+Math.round(mExp).toLocaleString();
-    document.getElementById("qs-vat").textContent = "AED "+vat.net.toLocaleString();
-    qs.style.display = "block";
-  }
-
-  // Show last 6 transactions
-  var recent = txns.slice().reverse().slice(0, 6);
-  list.innerHTML = recent.map(function(t) {
-    var cc = CCLR[t.category] || CCLR["Other"];
-    var amtColor = t.type === "income" ? "color:var(--emerald);font-weight:700" : "color:var(--red);font-weight:700";
-    var amtPrefix = t.type === "income" ? "+" : "−";
-    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">' +
-      '<div style="flex:1;min-width:0">' +
-        '<div style="font-size:.84em;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(t.vendor) + '</div>' +
-        '<div style="font-size:.74em;color:var(--text-muted);margin-top:1px">' + esc(t.date) + ' &nbsp;·&nbsp; <span class="cp ' + cc.cls + '">' + esc(t.category) + '</span></div>' +
-      '</div>' +
-      '<div style="' + amtColor + ';font-size:.9em;white-space:nowrap">' + amtPrefix + ' AED ' + fmt(t.amount) + '</div>' +
-    '</div>';
-  }).join("") +
-  (txns.length > 6 ? '<div style="text-align:center;padding:10px 0;font-size:.78em;color:var(--text-muted)">' + (txns.length - 6) + ' more — <span onclick="showTab(\'dash\')" style="color:var(--brand);cursor:pointer;font-weight:600">View All</span></div>' : '');
-}
-
 // ══ LEDGER ══
-function renderTable(){ renderRecent();
-var tb=document.getElementById("txn-body");if(!txns.length){tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:24px">No transactions yet.</td></tr>';return;}tb.innerHTML=txns.slice().reverse().map(function(t){var zc;if(t.zoho_status==="synced")zc='<span class="badge b-zsync">✓ '+esc(t.zoho_number||"Synced")+'</span>';else if(t.zoho_status==="syncing")zc='<span style="color:var(--gold-mid);font-size:.8em">Syncing...</span>';else if(t.zoho_status==="failed")zc='<span class="badge b-zfail">✗</span>';else zc='<button class="btn btn-gold btn-sm" onclick="syncOne(\''+t.id+'\')">Sync</button>';var cc=CCLR[t.category]||CCLR["Other"];return'<tr><td>'+esc(t.date)+'</td><td><strong>'+esc(t.vendor.slice(0,22))+'</strong></td><td><span class="badge '+(t.type==="income"?"b-in":"b-ex")+'">'+esc(t.type)+'</span></td><td><span class="cp '+cc.cls+'">'+esc(t.category)+'</span></td><td><strong>'+fmt(t.amount)+'</strong></td><td>'+(t.vat.applicable?fmt(t.vat.amount):"—")+'</td><td>'+fmt(t.gross)+'</td><td><span class="badge '+(t.flagged?"b-fl":"b-ok")+'">'+(t.flagged?"⚠ "+esc(t.flagReason.slice(0,18)):esc(t.status))+'</span></td><td>'+zc+'</td><td><button class="btn btn-red btn-sm" onclick="delTxn(\''+t.id+'\')">✕</button></td></tr>';}).join("");}
+function renderTable(){var tb=document.getElementById("txn-body");if(!txns.length){tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:24px">No transactions yet.</td></tr>';return;}tb.innerHTML=txns.slice().reverse().map(function(t){var zc;if(t.zoho_status==="synced")zc='<span class="badge b-zsync">✓ '+esc(t.zoho_number||"Synced")+'</span>';else if(t.zoho_status==="syncing")zc='<span style="color:var(--gold-mid);font-size:.8em">Syncing...</span>';else if(t.zoho_status==="failed")zc='<span class="badge b-zfail">✗</span>';else zc='<button class="btn btn-gold btn-sm" onclick="syncOne(\''+t.id+'\')">Sync</button>';var cc=CCLR[t.category]||CCLR["Other"];return'<tr><td>'+esc(t.date)+'</td><td><strong>'+esc(t.vendor.slice(0,22))+'</strong></td><td><span class="badge '+(t.type==="income"?"b-in":"b-ex")+'">'+esc(t.type)+'</span></td><td><span class="cp '+cc.cls+'">'+esc(t.category)+'</span></td><td><strong>'+fmt(t.amount)+'</strong></td><td>'+(t.vat.applicable?fmt(t.vat.amount):"—")+'</td><td>'+fmt(t.gross)+'</td><td><span class="badge '+(t.flagged?"b-fl":"b-ok")+'">'+(t.flagged?"⚠ "+esc(t.flagReason.slice(0,18)):esc(t.status))+'</span></td><td>'+zc+'</td><td><button class="btn btn-red btn-sm" onclick="delTxn(\''+t.id+'\')">✕</button></td></tr>';}).join("");}
 
 function updateStats(){var inc=txns.filter(function(t){return t.type==="income";}).reduce(function(s,t){return s+t.amount;},0);var exp=txns.filter(function(t){return t.type==="expense";}).reduce(function(s,t){return s+t.amount;},0);var v=buildVAT();document.getElementById("s-inc").textContent="AED "+Math.round(inc).toLocaleString();document.getElementById("s-exp").textContent="AED "+Math.round(exp).toLocaleString();document.getElementById("s-profit").textContent="AED "+Math.round(inc-exp).toLocaleString();document.getElementById("s-cnt").textContent=txns.length;document.getElementById("s-vat").textContent="AED "+v.net.toLocaleString();document.getElementById("s-flag").textContent=txns.filter(function(t){return t.flagged;}).length;document.getElementById("s-synced").textContent=txns.filter(function(t){return t.zoho_status==="synced";}).length;document.getElementById("s-sfail").textContent=txns.filter(function(t){return t.zoho_status==="failed";}).length;}
 function buildVAT(){var out=txns.filter(function(t){return t.type==="income"&&t.vat.applicable;}).reduce(function(s,t){return s+t.vat.amount;},0);var inp=txns.filter(function(t){return t.type==="expense"&&t.vat.applicable;}).reduce(function(s,t){return s+t.vat.amount;},0);return{out:parseFloat(out.toFixed(2)),inp:parseFloat(inp.toFixed(2)),net:parseFloat((out-inp).toFixed(2))};}
 function calcVAT(){var trn=document.getElementById("c-trn").value,period=document.getElementById("c-period").value;var inc=txns.filter(function(t){return t.type==="income";}).reduce(function(s,t){return s+t.amount;},0);var v=buildVAT();var dls={Q1:"2026-04-28",Q2:"2026-07-28",Q3:"2026-10-28",Q4:"2027-01-28"};document.getElementById("v-trn").textContent=esc(trn);document.getElementById("v-period").textContent=esc(period);document.getElementById("v-sales").textContent="AED "+Math.round(inc).toLocaleString();document.getElementById("v-out").textContent="AED "+v.out.toLocaleString();document.getElementById("v-in").textContent="AED "+v.inp.toLocaleString();document.getElementById("v-net").textContent="AED "+v.net.toLocaleString();document.getElementById("v-dl").textContent=dls[period.split("-")[0]]||"Check FTA";}
 function runAgent(){if(!txns.length){log("No transactions","w");return;}var seen={},flags=0;txns.forEach(function(t){t.flagged=false;t.flagReason="";var issues=[];var k=t.date+"_"+t.amount+"_"+t.vendor+"_"+t.category;if(seen[k])issues.push("Possible duplicate");seen[k]=true;if(t.amount>50000)issues.push("Large amount");if(!t.vendor||t.vendor==="Unknown")issues.push("Missing vendor");if(new Date(t.date+"T00:00:00")>new Date(today()+"T00:00:00"))issues.push("Future date");if(t.amount<=0)issues.push("Zero amount");if(issues.length){t.flagged=true;t.flagReason=issues.join(", ");t.status="flagged";flags++;}else t.status="approved";});log("Validation: "+(txns.length-flags)+" approved, "+flags+" flagged");renderTable();renderZQ();updateStats();}
-async function addManual(){var date=document.getElementById("m-date").value,type=document.getElementById("m-type").value,amt=parseFloat(document.getElementById("m-amount").value),cat=document.getElementById("m-cat").value,vendor=document.getElementById("m-vendor").value.trim(),desc=document.getElementById("m-desc").value.trim(),vf=document.getElementById("m-vat").value==="yes";if(!date||isNaN(amt)||amt<=0||!vendor){alert("Fill Date, Amount, Vendor.");return;}var va=vf?parseFloat((amt*.05).toFixed(2)):0;var t={id:uid(),date:date,amount:parseFloat(amt.toFixed(2)),type:type,category:cat,vendor:vendor,description:desc,vat:{applicable:vf,rate:vf?5:0,amount:va},gross:parseFloat((amt+va).toFixed(2)),source:"manual",status:"pending",flagged:false,flagReason:"",zoho_status:null};txns.push(t);await saveTxn(t);log("Saved: "+vendor+" AED "+amt);renderTable();renderZQ();updateStats();renderRecentActivity();showTab("dash");document.getElementById("m-amount").value="";document.getElementById("m-vendor").value="";document.getElementById("m-desc").value="";document.getElementById("m-date").value=today();}
+async function addManual(){var date=document.getElementById("m-date").value,type=document.getElementById("m-type").value,amt=parseFloat(document.getElementById("m-amount").value),cat=document.getElementById("m-cat").value,vendor=document.getElementById("m-vendor").value.trim(),desc=document.getElementById("m-desc").value.trim(),vf=document.getElementById("m-vat").value==="yes";if(!date||isNaN(amt)||amt<=0||!vendor){alert("Fill Date, Amount, Vendor.");return;}var va=vf?parseFloat((amt*.05).toFixed(2)):0;var t={id:uid(),date:date,amount:parseFloat(amt.toFixed(2)),type:type,category:cat,vendor:vendor,description:desc,vat:{applicable:vf,rate:vf?5:0,amount:va},gross:parseFloat((amt+va).toFixed(2)),source:"manual",status:"pending",flagged:false,flagReason:"",zoho_status:null};txns.push(t);await saveTxn(t);log("Saved: "+vendor+" AED "+amt);renderTable();renderZQ();updateStats();showTab("dash");document.getElementById("m-amount").value="";document.getElementById("m-vendor").value="";document.getElementById("m-desc").value="";document.getElementById("m-date").value=today();}
 async function delTxn(id){if(!confirm("Delete this transaction?"))return;await delTxnDB(id);txns=txns.filter(function(t){return t.id!==id;});renderTable();renderZQ();updateStats();}
 async function clearAll(){if(!txns.length||!confirm("Clear ALL transactions from Supabase? Cannot be undone."))return;if(sb&&cu)await sb.from("transactions").delete().eq("user_id",cu.id);txns=[];zHist=[];renderTable();renderZQ();renderZH();updateStats();log("All transactions cleared from Supabase");}
 function expCSV(){var rows=[["Date","Vendor","Description","Type","Category","Net","VAT","Gross","Status","Zoho"]];txns.forEach(function(t){rows.push([t.date,t.vendor,t.description,t.type,t.category,t.amount,t.vat.amount,t.gross,t.status,t.zoho_number||""]);});var csv=rows.map(function(r){return r.map(function(c){return'"'+(c||"").toString().replace(/"/g,'""')+'"';}).join(",");}).join("\n");var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="hisab_ledger_"+today()+".csv";a.click();}
-async function loadSample(){txns=[];var s=[{date:"2026-04-02",type:"income",category:"Sales Invoice",vendor:"Restaurant Dine-in",description:"Dine-in sales week 1",amount:18500,va:925},{date:"2026-04-05",type:"expense",category:"Purchase/Expense Bill",vendor:"Al Maya Wholesale",description:"Food supplies",amount:4200,va:210},{date:"2026-04-10",type:"expense",category:"Salary/WPS",vendor:"Staff WPS April",description:"4 staff salaries",amount:12000,va:0},{date:"2026-04-12",type:"expense",category:"Rent",vendor:"Al Ghurair Properties",description:"Restaurant rent April",amount:9500,va:475},{date:"2026-04-25",type:"expense",category:"Utility Bill",vendor:"DEWA",description:"Electricity April",amount:1800,va:90}];for(var i=0;i<s.length;i++){var x=s[i];var t={id:uid(),date:x.date,amount:x.amount,type:x.type,category:x.category,vendor:x.vendor,description:x.description,vat:{applicable:x.va>0,rate:x.va>0?5:0,amount:x.va},gross:x.amount+x.va,source:"sample",status:"pending",flagged:false,flagReason:"",zoho_status:null};txns.push(t);await saveTxn(t);}log("Sample data loaded and saved");renderTable();renderZQ();updateStats();renderRecentActivity();showTab("dash");}
-
-
-// ── RECENT ACTIVITY (Single Upload tab) ──────────────────────────────────────
-function renderRecentActivity() {
-  var el = document.getElementById("recent-activity-body");
-  if (!el) return;
-  if (!txns || !txns.length) {
-    el.innerHTML =
-      "<div style='text-align:center;padding:28px 0;color:var(--text-muted);font-size:.84em'>" +
-      "<div style='font-size:2em;margin-bottom:10px'>📋</div>" +
-      "No transactions yet — upload your first invoice above</div>";
-    return;
-  }
-  var recent = txns.slice().reverse().slice(0, 5);
-  el.innerHTML = recent.map(function(t) {
-    var cc = CCLR[t.category] || CCLR["Other"];
-    var amtColor = t.type === "income" ? "color:var(--emerald)" : "color:var(--red)";
-    var amtSign  = t.type === "income" ? "+" : "−";
-    var statusDot = t.flagged
-      ? '<span style="width:7px;height:7px;border-radius:50%;background:#D97706;display:inline-block;flex-shrink:0"></span>'
-      : t.status === "approved"
-        ? '<span style="width:7px;height:7px;border-radius:50%;background:var(--emerald);display:inline-block;flex-shrink:0"></span>'
-        : '<span style="width:7px;height:7px;border-radius:50%;background:var(--border-mid);display:inline-block;flex-shrink:0"></span>';
-    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">' +
-      '<div style="width:36px;height:36px;border-radius:9px;background:' + cc.bg + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.78em;font-weight:700;color:' + cc.hdr + '">' +
-        (t.vendor || "?").charAt(0).toUpperCase() +
-      '</div>' +
-      '<div style="flex:1;min-width:0">' +
-        '<div style="font-size:.85em;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(t.vendor) + '</div>' +
-        '<div style="font-size:.74em;color:var(--text-muted);margin-top:1px;display:flex;align-items:center;gap:6px">' +
-          '<span class="cp ' + cc.cls + '" style="font-size:.68em">' + esc(t.category) + '</span>' +
-          '<span>' + esc(t.date) + '</span>' +
-        '</div>' +
-      '</div>' +
-      '<div style="text-align:right;flex-shrink:0">' +
-        '<div style="font-size:.88em;font-weight:700;' + amtColor + '">' + amtSign + ' AED ' + fmt(t.amount) + '</div>' +
-        '<div style="font-size:.72em;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:4px;justify-content:flex-end">' + statusDot + esc(t.status) + '</div>' +
-      '</div>' +
-    '</div>';
-  }).join("") +
-  (txns.length > 5
-    ? "<div style='text-align:center;padding:10px 0;font-size:.78em;color:var(--text-muted);cursor:pointer' onclick='showTab(&quot;dash&quot;)'> + " + (txns.length - 5) + " more transactions — view all in Dashboard</div>"
-    : '');
-}
+async function loadSample(){txns=[];var s=[{date:"2026-04-02",type:"income",category:"Sales Invoice",vendor:"Restaurant Dine-in",description:"Dine-in sales week 1",amount:18500,va:925},{date:"2026-04-05",type:"expense",category:"Purchase/Expense Bill",vendor:"Al Maya Wholesale",description:"Food supplies",amount:4200,va:210},{date:"2026-04-10",type:"expense",category:"Salary/WPS",vendor:"Staff WPS April",description:"4 staff salaries",amount:12000,va:0},{date:"2026-04-12",type:"expense",category:"Rent",vendor:"Al Ghurair Properties",description:"Restaurant rent April",amount:9500,va:475},{date:"2026-04-25",type:"expense",category:"Utility Bill",vendor:"DEWA",description:"Electricity April",amount:1800,va:90}];for(var i=0;i<s.length;i++){var x=s[i];var t={id:uid(),date:x.date,amount:x.amount,type:x.type,category:x.category,vendor:x.vendor,description:x.description,vat:{applicable:x.va>0,rate:x.va>0?5:0,amount:x.va},gross:x.amount+x.va,source:"sample",status:"pending",flagged:false,flagReason:"",zoho_status:null};txns.push(t);await saveTxn(t);}log("Sample data loaded and saved");renderTable();renderZQ();updateStats();showTab("dash");}
 
 // ── RESULT CARD DELEGATED EVENTS ─────────────────────────────────────────────
 document.addEventListener("click", function(e) {
