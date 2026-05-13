@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hisab — حساب | App</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Naskh+Arabic:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@supabase/supabase-js@2.45.0/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --brand:#1B3A5C; --brand-mid:#24527F; --brand-light:#EBF2FA; --brand-xlight:#F2F7FC;
+  --gold:#D4A843; --gold-mid:#B8960C; --gold-light:#FDF8EE; --gold-border:#EDD98A;
+  --emerald:#059669; --em-bg:#F0FAF4; --em-bd:#D1FAE5;
+  --red:#DC2626; --re-bg:#FFF5F5; --re-bd:#FEE2E2;
+  --warm-white:#F8F5EE; --warm-gray:#F4F1EA; --card:#FFFFFF;
+  --border:#E8E2D4; --border-mid:#D6CFBF;
+  --text:#1E2A3A; --text-mid:#374151; --text-muted:#6B7280;
+  --amber:#D97706; --am-bg:#FFFBEB;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--warm-gray);color:var(--text);font-size:14px}
+
+/* ═══════════════ AUTH SCREEN ═══════════════ */
+#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,var(--brand-xlight) 0%,#fff 60%)}
+.auth-card{width:100%;max-width:420px;margin:20px;background:var(--card);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 24px 64px rgba(27,58,92,.12)}
+.auth-header{background:var(--brand);padding:32px;text-align:center}
+.auth-mark{width:52px;height:52px;border-radius:13px;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.4em;color:var(--brand);margin:0 auto 12px}
+.auth-header h1{font-size:1.5em;font-weight:800;color:#fff;letter-spacing:-.02em}
+.auth-header p{font-family:'Noto Naskh Arabic',serif;font-size:.88em;color:rgba(255,255,255,.6);margin-top:2px}
+.auth-body{padding:28px}
+.auth-tabs{display:flex;background:var(--warm-gray);border-radius:9px;padding:3px;margin-bottom:24px}
+.atab{flex:1;text-align:center;padding:8px;border-radius:7px;cursor:pointer;font-size:.83em;font-weight:600;color:var(--text-muted);transition:all .2s}
+.atab.active{background:var(--brand);color:#fff}
+.af{margin-bottom:14px}
+.af label{display:block;font-size:.76em;font-weight:600;color:var(--text-muted);margin-bottom:5px;letter-spacing:.04em;text-transform:uppercase}
+.af input{width:100%;padding:11px 14px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-size:.9em;font-family:inherit;transition:border-color .2s}
+.af input:focus{outline:none;border-color:var(--brand)}
+.auth-btn{width:100%;padding:12px;border-radius:9px;background:var(--brand);color:#fff;font-weight:700;font-size:.9em;border:none;cursor:pointer;margin-top:4px;box-shadow:0 4px 14px rgba(27,58,92,.2);transition:background .2s}
+.auth-btn:hover{background:var(--brand-mid)}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed}
+.auth-err{background:var(--re-bg);border:1px solid var(--re-bd);border-radius:7px;padding:9px 13px;font-size:.81em;color:#991B1B;margin-top:10px;display:none}
+.auth-ok{background:var(--em-bg);border:1px solid var(--em-bd);border-radius:7px;padding:9px 13px;font-size:.81em;color:#065F46;margin-top:10px;display:none}
+.auth-note{text-align:center;font-size:.75em;color:var(--text-muted);margin-top:18px}
+.auth-note a{color:var(--brand)}
+.sb-setup{background:var(--brand-xlight);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:18px}
+.sb-setup strong{font-size:.8em;color:var(--brand);display:block;margin-bottom:8px}
+.sb-setup input{width:100%;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:#fff;font-family:monospace;font-size:.78em;color:var(--brand);margin-bottom:6px}
+.sb-setup input:focus{outline:none;border-color:var(--brand)}
+.sb-connect{width:100%;padding:8px;border-radius:7px;background:var(--brand);color:#fff;border:none;font-weight:700;font-size:.82em;cursor:pointer}
+.sql-block{background:var(--brand);color:#D1FAE5;border-radius:7px;padding:10px 12px;font-family:monospace;font-size:.7em;line-height:1.7;margin:10px 0;white-space:pre;overflow-x:auto}
+
+/* ═══════════════ APP HEADER ═══════════════ */
+#app-screen{display:none}
+header{background:var(--brand);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(27,58,92,.15)}
+.h-logo{display:flex;align-items:center;gap:8px}
+.h-mark{width:30px;height:30px;border-radius:7px;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.88em;color:var(--brand)}
+.h-name{font-weight:700;font-size:1em;color:#fff;letter-spacing:-.01em}
+.h-ar{font-family:'Noto Naskh Arabic',serif;font-size:.78em;color:var(--gold)}
+.h-right{display:flex;align-items:center;gap:10px}
+.saved-tag{font-size:.72em;color:var(--gold);opacity:0;transition:opacity .3s}
+.saved-tag.show{opacity:1}
+.status-pill{background:rgba(255,255,255,.1);border-radius:20px;padding:3px 10px;font-size:.72em;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:5px}
+.sdot{width:6px;height:6px;border-radius:50%;background:#ff6b6b}
+.sdot.on{background:#34d399}
+.user-chip{background:rgba(255,255,255,.1);border-radius:20px;padding:3px 10px 3px 4px;font-size:.72em;color:rgba(255,255,255,.8);display:flex;align-items:center;gap:6px}
+.u-av{width:22px;height:22px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:.68em;font-weight:700;color:var(--brand)}
+.btn-logout{background:rgba(220,38,38,.2);border:1px solid rgba(220,38,38,.3);color:#fca5a5;font-size:.72em;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer}
+.btn-logout:hover{background:rgba(220,38,38,.35)}
+
+/* ═══════════════ LAYOUT ═══════════════ */
+.container{max-width:1100px;margin:0 auto;padding:18px 16px}
+.claude-banner{background:var(--gold-light);border:1px solid var(--gold-border);border-radius:9px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.82em}
+.claude-banner strong{color:var(--gold-mid)}
+.claude-banner input{padding:6px 10px;border:1px solid var(--gold-border);border-radius:6px;font-family:monospace;font-size:.82em;flex:1;min-width:200px}
+
+/* TABS */
+.tabs{display:flex;gap:5px;margin-bottom:16px;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:5px}
+.tab{padding:7px 14px;border-radius:7px;cursor:pointer;font-size:.82em;font-weight:600;color:var(--text-muted);border:none;background:transparent;transition:all .15s}
+.tab:hover{background:var(--brand-xlight);color:var(--brand)}
+.tab.active{background:var(--brand);color:#fff}
+.tab.t-batch.active{background:#6f42c1}
+.tab.t-batch{color:#6f42c1}
+.tab.t-zoho.active{background:var(--gold-mid)}
+.tab.t-zoho{color:var(--gold-mid)}
+.section{display:none}
+.section.active{display:block}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:16px}
+.card h2{font-size:.88em;font-weight:700;color:var(--brand);margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--brand-xlight);display:flex;align-items:center;gap:8px}
+.card h2.purple{color:#6f42c1;border-bottom-color:#EDE9FE}
+.card h2.gold{color:var(--gold-mid);border-bottom-color:var(--gold-light)}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kp{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:14px;text-align:center}
+.kp .kl{font-size:.7em;color:var(--text-muted);font-weight:600;margin-bottom:4px}
+.kp .kv{font-size:1.22em;font-weight:800;color:var(--brand)}
+.kp.kp-inc .kv{color:var(--emerald)}
+.kp.kp-exp .kv{color:var(--red)}
+.kp.kp-amb .kv{color:var(--amber)}
+.kp.kp-gold .kv{color:var(--gold-mid)}
+
+/* UPLOAD ZONES */
+.upload-zone{border:2px dashed var(--border-mid);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;background:var(--brand-xlight);transition:all .2s}
+.upload-zone:hover{border-color:var(--brand);background:var(--brand-light)}
+.upload-zone .icon{font-size:2.2em;margin-bottom:8px}
+.upload-zone h3{font-size:.95em;color:var(--brand);margin-bottom:4px;font-weight:700}
+.upload-zone p{font-size:.78em;color:var(--text-muted)}
+.upload-zone input{display:none}
+.batch-drop{border:2px dashed #C4B5FD;border-radius:12px;padding:36px 24px;text-align:center;cursor:pointer;background:#FAF8FF;transition:all .2s}
+.batch-drop:hover{border-color:#6f42c1;background:#F5F0FF}
+.batch-drop .icon{font-size:2.6em;margin-bottom:10px}
+.batch-drop h3{font-size:.95em;color:#6f42c1;margin-bottom:5px;font-weight:700}
+.batch-drop p{font-size:.78em;color:var(--text-muted)}
+.batch-drop input{display:none}
+.limit-badge{display:inline-block;background:#6f42c1;color:#fff;border-radius:20px;padding:3px 12px;font-size:.72em;font-weight:700;margin-top:8px}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:.79em}
+th{background:var(--brand);color:#fff;padding:8px 10px;text-align:left;font-weight:600}
+td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:hover td{background:var(--brand-xlight)}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.71em;font-weight:700}
+.b-in{background:var(--em-bg);color:#065F46}
+.b-ex{background:var(--re-bg);color:#991B1B}
+.b-ok{background:var(--brand-xlight);color:var(--brand)}
+.b-fl{background:var(--am-bg);color:#92400E}
+.b-zsync{background:var(--em-bg);color:#065F46}
+.b-zfail{background:var(--re-bg);color:#991B1B}
+.b-zpend{background:var(--gold-light);color:var(--gold-mid)}
+
+/* CATEGORY PILLS */
+.cp{display:inline-block;padding:2px 8px;border-radius:8px;font-size:.71em;font-weight:700;white-space:nowrap}
+.cp-sales{background:var(--em-bg);color:#065F46}
+.cp-expense{background:var(--re-bg);color:#991B1B}
+.cp-utility{background:#DBEAFE;color:#1D4ED8}
+.cp-salary{background:#F5F3FF;color:#5B21B6}
+.cp-rent{background:#FEF9C3;color:#854D0E}
+.cp-marketing{background:#FCE7F3;color:#9D174D}
+.cp-travel{background:#D1FAE5;color:#065F46}
+.cp-indirect{background:#E0F2FE;color:#0369A1}
+.cp-other{background:var(--warm-gray);color:var(--text-muted)}
+
+/* PROC CARDS */
+.proc-card{background:var(--brand-xlight);border:1px solid var(--border);border-radius:9px;padding:14px;margin-bottom:10px}
+.proc-row{display:flex;align-items:center;gap:10px;margin-bottom:5px}
+.proc-name{font-weight:700;font-size:.86em;color:var(--brand);flex:1}
+.spinner{width:16px;height:16px;border:2.5px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+.spinner-sm{width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.proc-status{font-size:.77em;color:var(--text-muted)}
+
+/* RESULT CARDS */
+.result-card{background:var(--card);border:1.5px solid var(--brand);border-radius:10px;padding:16px;margin-bottom:12px}
+.result-fname{font-weight:700;font-size:.86em;color:var(--brand);margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.result-note{font-size:.74em;color:var(--text-muted);background:var(--brand-xlight);border-radius:6px;padding:6px 10px;margin-bottom:10px}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.fi label{display:block;font-size:.72em;color:var(--text-muted);font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}
+.fi input,.fi select{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.84em;background:#fff;color:var(--text)}
+.fi input:focus,.fi select:focus{outline:none;border-color:var(--brand)}
+.conf{display:inline-block;font-size:.71em;padding:2px 7px;border-radius:9px}
+.conf-high{background:var(--em-bg);color:#065F46}
+.conf-med{background:var(--am-bg);color:#92400E}
+.conf-low{background:var(--re-bg);color:#991B1B}
+
+/* BATCH */
+.b-overview{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.bst{background:#F5F0FF;border-radius:8px;padding:10px;text-align:center}
+.bst .bl{font-size:.69em;color:#6B7280;margin-bottom:2px}
+.bst .bv{font-size:1.15em;font-weight:800;color:#6f42c1}
+.bst.done .bv{color:var(--emerald)}
+.bst.fail .bv{color:var(--red)}
+.bst.proc .bv{color:var(--amber)}
+.prog-wrap{background:#EDE9FE;border-radius:6px;height:8px;overflow:hidden;margin-bottom:5px}
+.prog-bar{height:100%;background:#6f42c1;border-radius:6px;width:0%;transition:width .4s}
+.prog-lbl{font-size:.76em;color:#6f42c1;font-weight:700}
+.qtable{width:100%;border-collapse:collapse;font-size:.77em}
+.qtable th{background:#6f42c1;color:#fff;padding:7px 10px;text-align:left}
+.qtable td{padding:6px 10px;border-bottom:1px solid #EDE9FE;vertical-align:middle}
+.qbadge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:.73em;font-weight:700}
+.qb-q{background:#F3F4F6;color:#6B7280}
+.qb-r{background:#DBEAFE;color:#1D4ED8}
+.qb-a{background:var(--am-bg);color:#92400E}
+.qb-d{background:var(--em-bg);color:#065F46}
+.qb-f{background:var(--re-bg);color:#991B1B}
+.mini-spin{width:11px;height:11px;border:2px solid rgba(0,0,0,.12);border-top-color:currentColor;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+.export-bar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;background:#F5F0FF;border:1.5px solid #C4B5FD;border-radius:9px;padding:13px 16px;margin-bottom:14px}
+.export-title{font-size:.86em;font-weight:700;color:#6f42c1;flex:1}
+.seg-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px 8px 0 0;font-weight:700;font-size:.84em}
+.seg-wrap{border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;overflow:hidden;margin-bottom:14px}
+table.seg{width:100%;border-collapse:collapse;font-size:.77em}
+table.seg th{padding:7px 10px;text-align:left;color:#fff}
+table.seg td{padding:6px 10px;border-bottom:1px solid #F5F5F5}
+table.seg tr.tr{font-weight:700;background:var(--warm-gray)}
+
+/* ZOHO */
+.zoho-card{background:var(--gold-light);border:1.5px solid var(--gold-border);border-radius:10px;padding:18px;margin-bottom:16px}
+.zoho-status{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--gold-border);border-radius:8px;padding:9px 13px;margin-bottom:14px;font-size:.81em}
+.zdot{width:9px;height:9px;border-radius:50%;background:#ccc;flex-shrink:0}
+.zdot.ok{background:#34d399}
+.zprog-wrap{background:var(--gold-light);border-radius:4px;height:5px;overflow:hidden;margin-top:4px}
+.zprog-bar{height:100%;background:var(--gold-mid);border-radius:4px;width:0%;transition:width .3s}
+
+/* VAT */
+.vat-box{background:var(--brand);color:#fff;border-radius:10px;padding:18px}
+.vr{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.12);font-size:.85em}
+.vr:last-child{border:none;font-weight:700;font-size:.94em;padding-top:8px}
+
+/* LOG */
+.log{background:#0D1B2A;color:#D1FAE5;border-radius:8px;padding:12px;font-family:monospace;font-size:.74em;max-height:150px;overflow-y:auto;line-height:1.65}
+.log .w{color:#FCD34D}
+.log .e{color:#FCA5A5}
+.log .z{color:var(--gold)}
+.log .b{color:#C4B5FD}
+.log .s{color:#6EE7B7}
+
+/* BUTTONS */
+.btn{display:inline-block;padding:8px 16px;border-radius:7px;font-size:.83em;font-weight:700;cursor:pointer;border:none}
+.btn-brand{background:var(--brand);color:#fff}
+.btn-em{background:var(--emerald);color:#fff}
+.btn-red{background:var(--red);color:#fff}
+.btn-gold{background:var(--gold-mid);color:#fff}
+.btn-purple{background:#6f42c1;color:#fff}
+.btn-sm{padding:4px 10px;font-size:.74em}
+.btn:hover{opacity:.88}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.retry-btn{background:var(--brand-xlight);border:1px solid var(--border);color:var(--brand);border-radius:6px;padding:5px 12px;font-size:.75em;cursor:pointer;margin-top:6px}
+
+/* FORMS */
+label{display:block;font-size:.8em;color:var(--text-mid);margin:8px 0 3px;font-weight:500}
+input[type=text],input[type=number],input[type=date],input[type=password],input[type=url],select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:.84em;background:#fff;color:var(--text)}
+input:focus,select:focus{outline:none;border-color:var(--brand)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.help{font-size:.73em;color:var(--text-muted);margin-top:3px;line-height:1.5}
+
+
+/* ═══ VERIFICATION LAYER ═══ */
+.verify-wrap{margin-top:12px;border-radius:10px;overflow:hidden;border:1.5px solid var(--border)}
+.verify-header{display:flex;align-items:center;gap:10px;padding:11px 14px;font-size:.82em;font-weight:700;cursor:pointer;user-select:none}
+.verify-header:hover{filter:brightness(.97)}
+.vs-green{background:#F0FAF4;border-color:#D1FAE5;color:#065F46}
+.vs-yellow{background:#FFFBEB;border-color:#FDE68A;color:#92400E}
+.vs-red{background:#FFF5F5;border-color:#FEE2E2;color:#991B1B}
+.verify-badge{padding:3px 10px;border-radius:20px;font-size:.78em;font-weight:800;letter-spacing:.04em}
+.vb-green{background:#D1FAE5;color:#065F46}
+.vb-yellow{background:#FDE68A;color:#92400E}
+.vb-red{background:#FEE2E2;color:#991B1B}
+.verify-score{margin-left:auto;font-size:.8em;opacity:.7}
+.verify-chevron{font-size:.7em;transition:transform .2s}
+.verify-chevron.open{transform:rotate(180deg)}
+.verify-body{padding:12px 14px;background:#fff;border-top:1px solid var(--border);display:none}
+.verify-body.open{display:block}
+.vcheck-row{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--border);font-size:.81em}
+.vcheck-row:last-child{border:none}
+.vcheck-icon{flex-shrink:0;font-size:1em;width:18px;text-align:center}
+.vcheck-label{font-weight:700;color:var(--text);min-width:100px}
+.vcheck-status{margin-left:auto;font-size:.76em;font-weight:700;padding:1px 8px;border-radius:8px}
+.vcs-pass{background:#D1FAE5;color:#065F46}
+.vcs-fail{background:#FEE2E2;color:#991B1B}
+.vcs-warn{background:#FDE68A;color:#92400E}
+.vcheck-detail{font-size:.78em;color:var(--text-muted);line-height:1.5;margin-top:2px}
+.action-required{background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:10px 13px;margin-top:10px;font-size:.8em;color:#92400E;display:flex;gap:8px;align-items:flex-start}
+.action-required .ar-icon{font-size:1.1em;flex-shrink:0}
+.action-required strong{display:block;margin-bottom:2px}
+.layer-tag{display:inline-block;font-size:.68em;font-weight:700;padding:1px 7px;border-radius:10px;letter-spacing:.06em;margin-bottom:6px}
+.lt-1{background:var(--brand-xlight);color:var(--brand)}
+.lt-2{background:#F5F3FF;color:#5B21B6}
+.blocked-banner{background:#FFF5F5;border:1.5px solid #FEE2E2;border-radius:8px;padding:11px 14px;margin-top:10px;font-size:.82em;color:#991B1B;font-weight:600;display:flex;align-items:center;gap:8px}
+.verify-spinner{width:14px;height:14px;border:2px solid rgba(0,0,0,.1);border-top-color:currentColor;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:4px}
+
+@media(max-width:640px){.grid2,.kpi-grid,.field-grid,.b-overview{grid-template-columns:1fr}.tabs{gap:3px}.tab{padding:6px 10px;font-size:.76em}}
+</style>
+</head>
+<body>
+
+<!-- ══════════ AUTH SCREEN ══════════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-mark">H</div>
+      <h1>Hisab</h1>
+      <p>حساب — Smart UAE Accounting</p>
+    </div>
+    <div class="auth-body">
+      <div class="auth-tabs">
+        <div class="atab active" onclick="switchTab('login')">Sign In · تسجيل الدخول</div>
+        <div class="atab" onclick="switchTab('signup')">Sign Up · إنشاء حساب</div>
+      </div>
+      <div id="pane-login">
+        <div class="af"><label>Email · البريد الإلكتروني</label><input type="email" id="l-email" placeholder="you@company.com"></div>
+        <div class="af"><label>Password · كلمة المرور</label><input type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <button class="auth-btn" onclick="doLogin()" id="l-btn">Sign In →</button>
+        <div class="auth-err" id="l-err"></div>
+      </div>
+      <div id="pane-signup" style="display:none">
+        <div class="af"><label>Business Name · اسم الشركة</label><input type="text" id="s-name" placeholder="e.g. Al Noor Trading LLC"></div>
+        <div class="af"><label>Email · البريد الإلكتروني</label><input type="email" id="s-email" placeholder="you@company.com"></div>
+        <div class="af"><label>Password · كلمة المرور (min 8 chars)</label><input type="password" id="s-pass" placeholder="••••••••"></div>
+        <button class="auth-btn" onclick="doSignup()" id="s-btn">Create Account →</button>
+        <div class="auth-err" id="s-err"></div>
+        <div class="auth-ok" id="s-ok"></div>
+      </div>
+      <div class="auth-note">By signing up you agree to our <a href="#">Terms of Service</a></div>
+      <div class="sb-setup" id="sb-setup-box">
+        <strong>⚙ First time? Connect your Supabase project</strong>
+        <input type="text" id="sb-url" placeholder="https://xxxx.supabase.co">
+        <input type="password" id="sb-key" placeholder="sb_publishable_xxxx... (anon key only)">
+        <button class="sb-connect" onclick="initSB()">Connect to Supabase →</button>
+        <button onclick="testConnection()" style="width:100%;padding:7px;border-radius:7px;background:transparent;border:1px solid var(--gold);color:var(--gold);font-weight:600;font-size:.8em;cursor:pointer;margin-top:6px">🔍 Diagnose Connection</button>
+        <div id="diag-result" style="display:none;margin-top:8px;padding:8px 10px;border-radius:6px;font-size:.76em;font-family:monospace;word-break:break-all"></div>
+        <div style="margin-top:10px;font-size:.76em;color:var(--text-muted)">Also run this SQL once in your Supabase SQL Editor:</div>
+        <div class="sql-block">create table if not exists transactions (
+  id text primary key,
+  user_id uuid references auth.users not null,
+  date text, vendor text, description text,
+  amount numeric, type text, category text,
+  vat_applicable boolean, vat_rate numeric,
+  vat_amount numeric, gross numeric,
+  status text, flagged boolean,
+  flag_reason text, zoho_status text,
+  zoho_number text, source text,
+  created_at timestamptz default now()
+);
+alter table transactions enable row level security;
+create policy "own" on transactions for all
+  using (auth.uid()=user_id)
+  with check (auth.uid()=user_id);</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app-screen">
+  <header>
+    <div class="h-logo">
+      <div class="h-mark">H</div>
+      <span class="h-name">Hisab</span>
+      <span class="h-ar">حساب</span>
+    </div>
+    <div class="h-right">
+      <span class="saved-tag" id="save-tag">✓ Saved</span>
+      <div class="user-chip"><div class="u-av" id="u-av">?</div><span id="u-email">—</span></div>
+      <button class="btn-logout" onclick="doLogout()">Sign Out</button>
+    </div>
+  </header>
+
+  <div style="background:var(--brand-xlight);border-bottom:1px solid var(--border);padding:7px 24px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:.76em;color:var(--brand)">
+  <span style="background:var(--brand);color:var(--gold);font-size:.78em;font-weight:700;padding:2px 9px;border-radius:10px;letter-spacing:.04em">AI AGENT</span>
+  Powered by <strong>Hisab AI</strong> — reads invoices autonomously in under 3 seconds &nbsp;·&nbsp;
+  <span style="font-family:'Noto Naskh Arabic',serif;font-size:.95em">مدعوم بالذكاء الاصطناعي</span>
+</div>
+<div class="container">
+    <!-- Claude API key is set by developer in DEVELOPER CONFIG above — not shown to clients -->
+    <div id="cl-banner" style="display:none"></div>
+
+    <div class="tabs">
+      <div class="tab active"  onclick="showTab('upload')">📄 Single Upload</div>
+      <div class="tab t-batch" onclick="showTab('batch')">📦 Batch</div>
+      <div class="tab"         onclick="showTab('dash')">Dashboard</div>
+      <div class="tab"         onclick="showTab('vat')">VAT Return</div>
+      <div class="tab"         onclick="showTab('manual')">Manual Entry</div>
+      <div class="tab t-zoho"  onclick="showTab('zoho')">🔗 Zoho Sync</div>
+    </div>
+
+    <!-- SINGLE UPLOAD -->
+    <div id="tab-upload" class="section active">
+      <div class="card">
+        <h2>Upload Invoice / Receipt / Bank Statement</h2>
+        <div class="upload-zone" onclick="document.getElementById('fi').click()">
+          <div class="icon">📁</div>
+          <h3>Drop files here or click to browse</h3>
+          <p>PDF · JPG · PNG · Excel · CSV</p>
+          <input type="file" id="fi" multiple accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv" onchange="handleFiles(this.files);this.value=''">
+        </div>
+        <div style="margin-top:12px;text-align:center">
+          <button onclick="document.getElementById('cam').click()" style="background:var(--emerald);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-size:.88em;font-weight:700;cursor:pointer">📷 Take Photo of Receipt</button>
+          <input type="file" id="cam" accept="image/*" capture="environment" style="display:none" onchange="handleFiles(this.files);this.value=''">
+        </div>
+        <div id="proc-area" style="margin-top:14px"></div>
+        <div id="res-area"></div>
+      </div>
+
+      <!-- RECENT TRANSACTIONS WIDGET -->
+      <div class="card" id="recent-card">
+        <h2 style="display:flex;align-items:center;justify-content:space-between">
+          <span>Recent Transactions</span>
+          <button onclick="showTab('dash')" style="background:none;border:none;font-size:.78em;color:var(--brand);font-weight:600;cursor:pointer;padding:0">View All →</button>
+        </h2>
+        <div id="recent-list">
+          <div style="text-align:center;padding:28px;color:var(--text-muted);font-size:.84em">
+            <div style="font-size:2em;margin-bottom:10px">📄</div>
+            No transactions yet — upload your first invoice above
+          </div>
+        </div>
+      </div>
+
+      <!-- QUICK STATS STRIP -->
+      <div id="quick-stats" style="display:none;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          <div class="kp kp-inc"><div class="kl">This Month Income</div><div class="kv" id="qs-inc">AED 0</div></div>
+          <div class="kp kp-exp"><div class="kl">This Month Expenses</div><div class="kv" id="qs-exp">AED 0</div></div>
+          <div class="kp kp-amb"><div class="kl">VAT Payable</div><div class="kv" id="qs-vat">AED 0</div></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- BATCH -->
+    <div id="tab-batch" class="section">
+      <div class="card">
+        <h2 class="purple">📦 Batch Invoice Processor</h2>
+        <div class="batch-drop" id="bd" onclick="document.getElementById('bi').click()">
+          <div class="icon">🗂️</div>
+          <h3>Drop 100+ invoices here or click to browse</h3>
+          <p>PDF · JPG · PNG — Claude reads and categorises every file automatically</p>
+          <div class="limit-badge">100+ files · Unlimited · 3 in parallel</div>
+          <input type="file" id="bi" multiple accept=".pdf,.jpg,.jpeg,.png" onchange="startBatch(this.files);this.value=''">
+        </div>
+        <div id="b-overview" style="display:none;margin-top:16px">
+          <div class="b-overview">
+            <div class="bst"><div class="bl">Total</div><div class="bv" id="bp-tot">0</div></div>
+            <div class="bst proc"><div class="bl">Processing</div><div class="bv" id="bp-proc">0</div></div>
+            <div class="bst done"><div class="bl">Done</div><div class="bv" id="bp-done">0</div></div>
+            <div class="bst fail"><div class="bl">Failed</div><div class="bv" id="bp-fail">0</div></div>
+            <div class="bst"><div class="bl">Time</div><div class="bv" id="bp-time">0s</div></div>
+          </div>
+          <div class="prog-wrap"><div class="prog-bar" id="prog-bar"></div></div>
+          <div class="prog-lbl" id="prog-lbl">Starting...</div>
+        </div>
+      </div>
+      <div class="card" id="bq-card" style="display:none">
+        <h2 class="purple">Processing Queue</h2>
+        <div style="overflow-x:auto">
+          <table class="qtable"><thead><tr><th>#</th><th>File</th><th>Size</th><th>Status</th><th>Category</th><th>Vendor</th><th>Amount</th><th>Type</th><th>Conf.</th></tr></thead>
+          <tbody id="q-body"></tbody></table>
+        </div>
+      </div>
+      <div class="export-bar" id="exp-bar" style="display:none">
+        <div class="export-title">✅ Batch complete — export your results</div>
+        <button class="btn btn-em btn-sm" onclick="exportExcel()">⬇ Excel</button>
+        <button class="btn btn-purple btn-sm" onclick="exportJSON()">⬇ JSON</button>
+        <button class="btn btn-brand btn-sm" onclick="addBatchToLedger()">Add to Ledger</button>
+        <button class="btn btn-gold btn-sm" onclick="addBatchAndSync()">Add + Sync Zoho</button>
+        <button class="btn btn-red btn-sm" onclick="clearBatch()">Clear</button>
+      </div>
+      <div id="seg-results" style="display:none">
+        <div class="card"><h2 class="purple">Results by Category</h2><div id="seg-container"></div></div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="tab-dash" class="section">
+      <div class="kpi-grid">
+        <div class="kp kp-inc"><div class="kl">Total Income</div><div class="kv" id="s-inc">AED 0</div></div>
+        <div class="kp kp-exp"><div class="kl">Total Expenses</div><div class="kv" id="s-exp">AED 0</div></div>
+        <div class="kp"><div class="kl">Net Profit</div><div class="kv" id="s-profit">AED 0</div></div>
+        <div class="kp kp-amb"><div class="kl">VAT Payable</div><div class="kv" id="s-vat">AED 0</div></div>
+        <div class="kp"><div class="kl">Transactions</div><div class="kv" id="s-cnt">0</div></div>
+        <div class="kp kp-exp"><div class="kl">Flagged</div><div class="kv" id="s-flag">0</div></div>
+        <div class="kp kp-gold"><div class="kl">Synced to Zoho</div><div class="kv" id="s-synced">0</div></div>
+        <div class="kp kp-exp"><div class="kl">Sync Failed</div><div class="kv" id="s-sfail">0</div></div>
+      </div>
+      <div class="card">
+        <h2>Transaction Ledger</h2>
+        <table><thead><tr><th>Date</th><th>Vendor</th><th>Type</th><th>Category</th><th>Amount</th><th>VAT</th><th>Gross</th><th>Status</th><th>Zoho</th><th></th></tr></thead>
+        <tbody id="txn-body"><tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:24px">No transactions yet — upload an invoice to get started.</td></tr></tbody></table>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="btn btn-em" onclick="runAgent()">Validate All</button>
+        <button class="btn btn-gold" onclick="bulkSync()">Sync All to Zoho</button>
+        <button class="btn btn-brand" onclick="expCSV()">Export CSV</button>
+        <button class="btn btn-brand btn-sm" onclick="loadSample()">Load Sample</button>
+        <button class="btn btn-red btn-sm" onclick="clearAll()">Clear All</button>
+      </div>
+      <div class="card"><h2>Agent Log</h2><div class="log" id="log">Agent ready.<br></div></div>
+    </div>
+
+    <!-- VAT -->
+    <div id="tab-vat" class="section">
+      <div class="grid2">
+        <div class="vat-box">
+          <div style="font-weight:700;font-size:.9em;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:8px;margin-bottom:12px">VAT Return — EmaraTax</div>
+          <div class="vr"><span>TRN</span><span id="v-trn">—</span></div>
+          <div class="vr"><span>Period</span><span id="v-period">—</span></div>
+          <div class="vr"><span>Total taxable sales</span><span id="v-sales">AED 0</span></div>
+          <div class="vr"><span>Output VAT</span><span id="v-out">AED 0</span></div>
+          <div class="vr"><span>Input VAT</span><span id="v-in">AED 0</span></div>
+          <div class="vr"><span>Net payable to FTA</span><span id="v-net">AED 0</span></div>
+          <div class="vr"><span>Filing deadline</span><span id="v-dl">—</span></div>
+        </div>
+        <div class="card">
+          <label>TRN Number</label><input type="text" id="c-trn" value="100123456700003">
+          <label>VAT Period</label>
+          <select id="c-period">
+            <option value="Q1-2026">Q1 2026</option><option value="Q2-2026" selected>Q2 2026</option>
+            <option value="Q3-2026">Q3 2026</option><option value="Q4-2026">Q4 2026</option>
+          </select>
+          <div style="margin-top:14px"><button class="btn btn-brand" onclick="calcVAT()">Calculate VAT Return</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANUAL -->
+    <div id="tab-manual" class="section">
+      <div class="card">
+        <h2>Add Transaction Manually</h2>
+        <div class="grid2">
+          <div>
+            <label>Date</label><input type="date" id="m-date">
+            <label>Type</label><select id="m-type"><option value="income">Income</option><option value="expense">Expense</option></select>
+            <label>Amount (AED, excl. VAT)</label><input type="number" id="m-amount" placeholder="e.g. 5000" min="0" step="0.01">
+            <label>VAT Applicable?</label><select id="m-vat"><option value="yes">Yes — 5%</option><option value="no">No</option></select>
+          </div>
+          <div>
+            <label>Category</label>
+            <select id="m-cat">
+              <optgroup label="Income">
+              <option>Sales Invoice</option>
+              <option>Service Invoice</option>
+              <option>Export Sales</option>
+              <option>Indirect Income</option>
+            </optgroup>
+            <optgroup label="Expenses">
+              <option>Purchase / Supplier Bill</option>
+              <option>Utility Bill</option>
+              <option>Salary / WPS</option>
+              <option>Rent</option>
+              <option>Marketing &amp; Advertising</option>
+              <option>Travel &amp; Transport</option>
+              <option>Professional Fees</option>
+              <option>Maintenance &amp; Repairs</option>
+              <option>Customs &amp; Import Duty</option>
+            </optgroup>
+            <optgroup label="Financial">
+              <option>Bank Charges &amp; Finance</option>
+              <option>Insurance</option>
+              <option>Other</option>
+            </optgroup>
+            </select>
+            <label>Vendor / Customer</label><input type="text" id="m-vendor" placeholder="e.g. DEWA">
+            <label>Description</label><input type="text" id="m-desc" placeholder="e.g. Office rent April">
+          </div>
+        </div>
+        <div style="margin-top:14px"><button class="btn btn-brand" onclick="addManual()">Add Transaction</button></div>
+      </div>
+    </div>
+
+    <!-- ZOHO SYNC -->
+    <div id="tab-zoho" class="section">
+      <div class="zoho-card">
+        <h2 class="gold">🔗 Zoho Books Configuration</h2>
+        <div class="zoho-status"><div class="zdot" id="z-dot"></div><span id="z-status">Not configured — fill in your Zoho credentials below</span></div>
+        <div class="grid2">
+          <div>
+            <label>Edge Function URL</label><input type="url" id="z-url" placeholder="https://your-project.supabase.co/functions/v1/zoho_sync">
+            <div class="help">Deploy zoho_sync.ts to Supabase or Deno Deploy</div>
+            <label>Organisation ID</label><input type="text" id="z-org" placeholder="e.g. 12345678">
+            <label>Client ID</label><input type="text" id="z-cid" placeholder="1000.XXXX">
+            <label>Client Secret</label><input type="password" id="z-sec" placeholder="••••••••">
+          </div>
+          <div>
+            <label>Refresh Token</label><input type="password" id="z-tok" placeholder="1000.XXXX...">
+            <div class="help">Zoho API Console → Self Client → ZohoBooks.fullaccess.all</div>
+            <label>VAT 5% Tax ID</label><input type="text" id="z-vat" placeholder="e.g. 4600000000000">
+            <label>Payment Account ID</label><input type="text" id="z-pay" placeholder="e.g. 4600000000001">
+            <label>Income Account ID</label><input type="text" id="z-inc" placeholder="e.g. 4600000000002">
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-gold" onclick="saveZoho()">Save Config</button>
+          <button class="btn btn-brand btn-sm" onclick="testZoho()">Test Connection</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="gold">Sync Queue</h2>
+        <table><thead><tr><th>Date</th><th>Vendor</th><th>Category</th><th>Type</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+        <tbody id="zq-body"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px">No pending syncs.</td></tr></tbody></table>
+        <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-gold" onclick="bulkSync()">Sync All Pending</button>
+          <div id="zp-wrap" style="flex:1;display:none">
+            <div style="font-size:.75em;color:var(--gold-mid)" id="zp-lbl">Syncing...</div>
+            <div class="zprog-wrap"><div class="zprog-bar" id="zp-bar"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="gold">Sync History</h2>
+        <table><thead><tr><th>Date</th><th>Vendor</th><th>Amount</th><th>Zoho Record</th><th>Type</th><th>Synced At</th></tr></thead>
+        <tbody id="zh-body"><tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px">No synced records yet.</td></tr></tbody></table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+
+// ══════════════════════════════════════════════════════════════════
+//  TWO-LAYER VERIFICATION PIPELINE
+// ══════════════════════════════════════════════════════════════════
+
+// Layer 2 — Independent Verification Agent
+async function runVerificationLayer(originalContent, layer1Data) {
+  var verifyPrompt = [
+    {
+      type: "text",
+      text: `You are a UAE VAT compliance auditor. Re-examine this invoice document INDEPENDENTLY.
+Do NOT trust any previously extracted values. Read the document fresh.
+
+Perform these 5 checks and return ONLY a JSON object:
+
+{
+  "status": "GREEN | YELLOW | RED",
+  "confidence_score": 0.00-1.00,
+  "verification_report": {
+    "math_check": "PASS | FAIL: explanation",
+    "vat_rate_check": "PASS | FAIL: explanation",
+    "trn_check": "PASS | FAIL: explanation",
+    "date_check": "PASS | WITHIN_QUARTER | OUTSIDE_QUARTER: explanation",
+    "document_integrity": "PASS | WARN: explanation"
+  },
+  "extracted_independently": {
+    "net_amount": number,
+    "vat_amount": number,
+    "gross_amount": number,
+    "trn": "string or empty",
+    "invoice_date": "YYYY-MM-DD"
+  },
+  "action_required": "null or string describing what accountant must check"
+}
+
+STATUS RULES:
+- GREEN: all checks PASS, confidence >= 0.90
+- YELLOW: minor discrepancy (<=0.10 AED rounding), or 1 soft warning, confidence 0.70-0.89
+- RED: math fails by >0.10 AED, invalid TRN format, or document appears altered
+
+VAT RULES (UAE):
+- Standard rate: exactly 5% of net amount
+- If gross - net ≠ vat_amount → FAIL math_check
+- If vat_amount ÷ net_amount ≠ 0.05 (±0.01 rounding) → FAIL vat_rate_check
+- TRN must be exactly 15 digits if present
+
+Return ONLY the JSON. No markdown, no explanation.`
+    }
+  ];
+
+  // Re-attach the original document content for independent reading
+  var content;
+  if (Array.isArray(originalContent)) {
+    // Image-based — pass images again + verification prompt
+    var imgBlocks = originalContent.filter(function(b){ return b.type === "image"; });
+    content = imgBlocks.concat(verifyPrompt);
+  } else {
+    // Text-based
+    content = verifyPrompt[0].text + "\n\nDOCUMENT TEXT:\n" + String(originalContent).slice(0, 5000);
+  }
+
+  var raw = await clFetch(content);
+  var clean = raw.replace(/```json|```/g,"").trim();
+  var m = clean.match(/\{[\s\S]*\}/);
+  if (m) clean = m[0];
+  return JSON.parse(clean);
+}
+
+// Cross-compare Layer 1 vs Layer 2
+function crossVerify(layer1, layer2Report) {
+  var issues = [];
+  var l2ext = layer2Report.extracted_independently;
+
+  if (l2ext) {
+    // Check if Layer 1 net amount matches Layer 2 independent read
+    var netDiff = Math.abs((layer1.amount || 0) - (l2ext.net_amount || 0));
+    if (netDiff > 0.10) {
+      issues.push("Net amount mismatch between extraction passes: Layer 1 read AED " +
+        fmt(layer1.amount) + ", Layer 2 read AED " + fmt(l2ext.net_amount));
+    }
+    // Check if VAT amounts agree
+    var vatDiff = Math.abs((layer1.vat_amount || 0) - (l2ext.vat_amount || 0));
+    if (vatDiff > 0.10) {
+      issues.push("VAT amount mismatch: Layer 1 read AED " +
+        fmt(layer1.vat_amount) + ", Layer 2 read AED " + fmt(l2ext.vat_amount));
+    }
+  }
+
+  // If cross-compare finds issues, escalate status to RED
+  if (issues.length > 0) {
+    layer2Report.status = "RED";
+    layer2Report.action_required = (layer2Report.action_required ? layer2Report.action_required + " | " : "") +
+      "CROSS-VERIFICATION FAILED: " + issues.join("; ");
+    layer2Report.verification_report.cross_layer_check = "FAIL: " + issues.join("; ");
+  } else {
+    layer2Report.verification_report.cross_layer_check = "PASS: Both extraction passes agree";
+  }
+
+  return layer2Report;
+}
+
+// Build verification UI card
+function buildVerifyUI(report, rid) {
+  if (!report) return "";
+  var status = report.status || "YELLOW";
+  var score  = report.confidence_score || 0;
+  var vr     = report.verification_report || {};
+  var action = report.action_required;
+  var headerCls = status==="GREEN" ? "vs-green" : status==="RED" ? "vs-red" : "vs-yellow";
+  var badgeCls  = status==="GREEN" ? "vb-green" : status==="RED" ? "vb-red"  : "vb-yellow";
+  var icon      = status==="GREEN" ? "&#10003;" : status==="RED" ? "&#10007;" : "&#9888;";
+  var label     = status==="GREEN" ? "Verified" : status==="RED" ? "Blocked &mdash; Do Not Submit" : "Review Required";
+  var checks = [
+    {key:"math_check",         label:"Math check",        icon:"&#128290;"},
+    {key:"vat_rate_check",     label:"VAT rate (5%)",     icon:"&#127462;&#127466;"},
+    {key:"trn_check",          label:"TRN validation",    icon:"&#128269;"},
+    {key:"date_check",         label:"VAT quarter",       icon:"&#128197;"},
+    {key:"document_integrity", label:"Doc integrity",     icon:"&#128737;"},
+    {key:"cross_layer_check",  label:"Cross-layer verify",icon:"&#9889;"},
+  ];
+  var checkRows = checks.map(function(c) {
+    var val = vr[c.key];
+    if (!val) return "";
+    var isPASS = val.indexOf("PASS")===0 || val.indexOf("WITHIN")===0;
+    var isFAIL = val.indexOf("FAIL")===0;
+    var scls   = isPASS ? "vcs-pass" : isFAIL ? "vcs-fail" : "vcs-warn";
+    var stxt   = isPASS ? "PASS" : isFAIL ? "FAIL" : "WARN";
+    var detail = val.replace(/^(PASS|FAIL|WARN|WITHIN_QUARTER|OUTSIDE_QUARTER):?\s*/i,"").trim();
+    return "<div class='vcheck-row'>" +
+      "<div class='vcheck-icon'>" + c.icon + "</div>" +
+      "<div style='flex:1'><span class='vcheck-label'>" + c.label + "</span>" +
+      (detail ? "<div class='vcheck-detail'>" + esc(detail) + "</div>" : "") +
+      "</div><span class='vcheck-status " + scls + "'>" + stxt + "</span></div>";
+  }).join("");
+  var actionHtml = (action && action !== "null") ?
+    "<div class='action-required'><div class='ar-icon'>&#9888;&#65039;</div><div><strong>Action Required</strong>" + esc(action) + "</div></div>" : "";
+  var blockedHtml = status==="RED" ?
+    "<div class='blocked-banner'>&#128683; This invoice is blocked &mdash; cannot be added to ledger until RED issues are resolved.</div>" : "";
+  var html =
+    "<div class='verify-wrap'>" +
+      "<div class='verify-header " + headerCls + "' onclick='toggleVerify(\"" + rid + "\")'>" +
+        "<span class='layer-tag lt-2'>LAYER 2 &mdash; VERIFICATION</span>" +
+        "<span class='verify-badge " + badgeCls + "'>" + icon + " " + status + "</span>" +
+        "<span>" + label + "</span>" +
+        "<span class='verify-score'>Confidence: " + (score*100).toFixed(0) + "%</span>" +
+        "<span class='verify-chevron' id='vc-" + rid + "'>&#9660;</span>" +
+      "</div>" +
+      "<div class='verify-body' id='vb-" + rid + "'>" +
+        checkRows + actionHtml + blockedHtml +
+      "</div>" +
+    "</div>";
+  return html;
+}
+
+function toggleVerify(rid) {
+  var body = document.getElementById("vb-" + rid);
+  var chev = document.getElementById("vc-" + rid);
+  if (!body) return;
+  var open = body.classList.toggle("open");
+  if (chev) chev.classList.toggle("open", open);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DEVELOPER CONFIG — fill these once before deploying to clients
+//  Clients never see these — they only see the login screen
+// ══════════════════════════════════════════════════════════════
+var SUPABASE_URL = "";  // e.g. "https://xxxx.supabase.co"
+var SUPABASE_KEY = "";  // e.g. "sb_publishable_xxxx"
+var CLAUDE_API_KEY = "";  // e.g. "sk-ant-api03-xxxx" — your Claude key
+// Auto-load Claude key on startup
+if (CLAUDE_API_KEY) { var AK = CLAUDE_API_KEY; }
+
+// ══ STATE ══
+var AK="",txns=[],bq=[],bqTs=0,zCfg=null,zHist=[],sb=null,cu=null,CON=3,EXB=50;
+
+// ══ CATEGORIES ══
+var CATS=[
+  "Sales Invoice",
+  "Service Invoice",
+  "Export Sales",
+  "Indirect Income",
+  "Purchase / Supplier Bill",
+  "Utility Bill",
+  "Salary / WPS",
+  "Rent",
+  "Marketing & Advertising",
+  "Travel & Transport",
+  "Professional Fees",
+  "Maintenance & Repairs",
+  "Bank Charges & Finance",
+  "Insurance",
+  "Customs & Import Duty",
+  "Other"
+];
+var CCLR={
+  "Sales Invoice":          {cls:"cp-sales",    hdr:"#065F46", bg:"#F0FAF4"},
+  "Service Invoice":        {cls:"cp-sales",    hdr:"#065F46", bg:"#ECFDF5"},
+  "Export Sales":           {cls:"cp-indirect", hdr:"#0369A1", bg:"#E0F2FE"},
+  "Indirect Income":        {cls:"cp-indirect", hdr:"#0369A1", bg:"#F0F9FF"},
+  "Purchase / Supplier Bill":{cls:"cp-expense", hdr:"#991B1B", bg:"#FFF5F5"},
+  "Utility Bill":           {cls:"cp-utility",  hdr:"#1D4ED8", bg:"#EFF6FF"},
+  "Salary / WPS":           {cls:"cp-salary",   hdr:"#5B21B6", bg:"#F5F3FF"},
+  "Rent":                   {cls:"cp-rent",     hdr:"#854D0E", bg:"#FFFBEB"},
+  "Marketing & Advertising":{cls:"cp-marketing",hdr:"#9D174D", bg:"#FDF2F8"},
+  "Travel & Transport":     {cls:"cp-travel",   hdr:"#065F46", bg:"#ECFDF5"},
+  "Professional Fees":      {cls:"cp-utility",  hdr:"#0C4A6E", bg:"#F0F9FF"},
+  "Maintenance & Repairs":  {cls:"cp-rent",     hdr:"#78350F", bg:"#FFF7ED"},
+  "Bank Charges & Finance": {cls:"cp-other",    hdr:"#374151", bg:"#F3F4F6"},
+  "Insurance":              {cls:"cp-other",    hdr:"#374151", bg:"#F9FAFB"},
+  "Customs & Import Duty":  {cls:"cp-expense",  hdr:"#7C2D12", bg:"#FFF7ED"},
+  "Other":                  {cls:"cp-other",    hdr:"#6B7280", bg:"#F9FAFB"}
+};
+function normCat(r,t){
+  var s=(r||"").toLowerCase();
+  if(s.includes("export")||s.includes("international")||s.includes("overseas"))return"Export Sales";
+  if(s.includes("service")&&t==="income")return"Service Invoice";
+  if((s.includes("sales")||s.includes("revenue"))&&t==="income")return"Sales Invoice";
+  if(s.includes("indirect")||s.includes("commission")||s.includes("dividend"))return"Indirect Income";
+  if(s.includes("custom")||s.includes("import duty")||s.includes("clearance")||s.includes("tariff"))return"Customs & Import Duty";
+  if(s.includes("utility")||s.includes("dewa")||s.includes("electric")||s.includes("water")||s.includes("internet")||s.includes("telecom"))return"Utility Bill";
+  if(s.includes("salary")||s.includes("wage")||s.includes("wps")||s.includes("payroll")||s.includes("staff"))return"Salary / WPS";
+  if(s.includes("rent")||s.includes("lease")||s.includes("tenancy"))return"Rent";
+  if(s.includes("marketing")||s.includes("advert")||s.includes("ads")||s.includes("promo"))return"Marketing & Advertising";
+  if(s.includes("travel")||s.includes("transport")||s.includes("fuel")||s.includes("flight")||s.includes("hotel"))return"Travel & Transport";
+  if(s.includes("legal")||s.includes("audit")||s.includes("consult")||s.includes("professional")||s.includes("accounting"))return"Professional Fees";
+  if(s.includes("maintenance")||s.includes("repair")||s.includes("service")&&t==="expense")return"Maintenance & Repairs";
+  if(s.includes("bank")||s.includes("finance charge")||s.includes("interest")&&t==="expense")return"Bank Charges & Finance";
+  if(s.includes("insurance")||s.includes("takaful"))return"Insurance";
+  if(s.includes("purchase")||s.includes("supplier")||s.includes("supplies")||s.includes("material"))return"Purchase / Supplier Bill";
+  return t==="income"?"Sales Invoice":t==="expense"?"Purchase / Supplier Bill":"Other";
+}
+function cp(l){var c=CCLR[l]||CCLR["Other"];return'<span class="cp '+c.cls+'">'+esc(l)+'</span>';}
+
+// ══ HELPERS ══
+function uid(){return"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,10);}
+function today(){return new Date().toISOString().slice(0,10);}
+function nowts(){return new Date().toLocaleTimeString()+" "+new Date().toLocaleDateString();}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
+function fmt(n){return Number(n||0).toLocaleString("en-AE",{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+// ══ SUPABASE ══
+function getSBClient(url, key) {
+  if (globalThis._hisabSB) return globalThis._hisabSB;
+  globalThis._hisabSB = window.supabase.createClient(url, key, {
+    auth: { persistSession: true, autoRefreshToken: true }
+  });
+  return globalThis._hisabSB;
+}
+
+async function testConnection() {
+  var url = document.getElementById("sb-url").value.trim();
+  var key = document.getElementById("sb-key").value.trim();
+  var out = document.getElementById("diag-result");
+  out.style.display = "block";
+  out.style.background = "#f0f5ff";
+  out.style.color = "#1B3A5C";
+  out.textContent = "Testing...";
+
+  if (!url || !key) { out.textContent = "❌ URL or key is empty."; return; }
+
+  // Test 1: Can we reach the Supabase project at all?
+  try {
+    var r1 = await fetch(url + "/auth/v1/settings", {
+      headers: { "apikey": key, "Content-Type": "application/json" }
+    });
+    if (r1.ok) {
+      var d1 = await r1.json();
+      out.style.background = "#F0FAF4"; out.style.color = "#065F46";
+      out.textContent = "✅ Connection OK — Auth settings reachable. Email signup enabled: " + (d1.external && d1.external.email ? "YES" : "NO") + ". Now try signing up.";
+    } else {
+      var txt = await r1.text();
+      out.style.background = "#FFF5F5"; out.style.color = "#991B1B";
+      out.textContent = "❌ HTTP " + r1.status + ": " + txt.slice(0, 200);
+    }
+  } catch(e) {
+    out.style.background = "#FFF5F5"; out.style.color = "#991B1B";
+    out.textContent = "❌ Network error: " + e.message + " — Check your Project URL is correct and has no trailing slash.";
+  }
+}
+
+function attachAuthListener(client) {
+  client.auth.onAuthStateChange(function(ev, sess) {
+    if (ev === "SIGNED_IN" && sess) { cu = sess.user; enterApp(); }
+    if (ev === "SIGNED_OUT") {
+      cu = null;
+      document.getElementById("auth-screen").style.display = "flex";
+      document.getElementById("app-screen").style.display = "none";
+    }
+  });
+}
+
+function initSB() {
+  var u = document.getElementById("sb-url").value.trim();
+  var k = document.getElementById("sb-key").value.trim();
+  var btn = document.querySelector(".sb-connect");
+
+  if (!u || !k) { alert("Please enter both the Project URL and anon key."); return; }
+
+  // Validate URL format
+  if (!u.startsWith("https://") || !u.includes(".supabase.co")) {
+    alert("Project URL looks wrong.\nIt should look like:\nhttps://xxxxxxxxxxxx.supabase.co");
+    return;
+  }
+
+  // Validate key format — accepts both old JWT (eyJ) and new Supabase format (sb_publishable / sb_)
+  if (!k.startsWith("eyJ") && !k.startsWith("sb_") && !k.startsWith("sb/")) {
+    alert("Anon key looks wrong.\nIt should start with eyJ... or sb_publishable_...\nMake sure you are copying the \'anon public\' key, not the service role key.");
+    return;
+  }
+
+  btn.textContent = "Connecting...";
+  btn.disabled = true;
+
+  try {
+    sb = getSBClient(u, k);
+    localStorage.setItem("sb_u", u);
+    localStorage.setItem("sb_k", k);
+    attachAuthListener(sb);
+    btn.textContent = "Connected ✓";
+    btn.style.background = "#059669";
+    chkSession();
+  } catch(e) {
+    btn.textContent = "Connect to Supabase →";
+    btn.disabled = false;
+    alert("Connection failed: " + e.message);
+  }
+}
+
+// Auto-init: use hardcoded config first, fallback to localStorage for dev
+(function() {
+  var u = SUPABASE_URL || localStorage.getItem("sb_u");
+  var k = SUPABASE_KEY || localStorage.getItem("sb_k");
+  if (u && k) {
+    // Pre-fill setup box (hidden from clients but useful for dev)
+    var urlEl = document.getElementById("sb-url");
+    var keyEl = document.getElementById("sb-key");
+    if(urlEl) urlEl.value = u;
+    if(keyEl) keyEl.value = "••••••••••••••••••••";  // mask the key
+    sb = getSBClient(u, k);
+    attachAuthListener(sb);
+    chkSession();
+    // Hide setup box if credentials are hardcoded
+    var box = document.getElementById("sb-setup-box");
+    if(box) box.style.display = (SUPABASE_URL && SUPABASE_KEY) ? "none" : "block";
+  }
+})();
+
+function enterApp(){document.getElementById("auth-screen").style.display="none";document.getElementById("app-screen").style.display="block";var em=cu?cu.email:"";document.getElementById("u-email").textContent=em.split("@")[0];document.getElementById("u-av").textContent=em.charAt(0).toUpperCase();document.getElementById("m-date").value=today();loadZoho();var ck=localStorage.getItem("cl_key");if(ck){AK=ck;checkClaude(ck);document.getElementById("cl-banner").style.display="none";}else{document.getElementById("cl-banner").style.display="flex";}loadTxns();log("Welcome back, "+em+" — loading data...","s");setTimeout(renderRecentActivity,800);}
+
+// ══ SUPABASE DATA ══
+async function loadTxns(){
+  if(!cu)return;
+  if(!sb){
+    log("Database not connected — transactions will not be saved to cloud.","w");
+    return;
+  }var{data,error}=await sb.from("transactions").select("*").eq("user_id",cu.id).order("created_at",{ascending:false});if(error){log("Load error: "+error.message,"e");return;}txns=(data||[]).map(function(r){return{id:r.id,date:r.date,vendor:r.vendor||"",description:r.description||"",amount:r.amount||0,type:r.type,category:r.category,vat:{applicable:r.vat_applicable,rate:r.vat_rate||0,amount:r.vat_amount||0},gross:r.gross||0,status:r.status||"pending",flagged:r.flagged||false,flagReason:r.flag_reason||"",zoho_status:r.zoho_status||null,zoho_number:r.zoho_number||null,source:r.source||""};});log("Loaded "+txns.length+" transactions.","s");renderTable();renderZQ();updateStats();renderRecent();}
+async function saveTxn(t){if(!sb||!cu){log("Saved locally only — Supabase not connected.","w");return;}var row={id:t.id,user_id:cu.id,date:t.date,vendor:t.vendor,description:t.description,amount:t.amount,type:t.type,category:t.category,vat_applicable:t.vat.applicable,vat_rate:t.vat.rate,vat_amount:t.vat.amount,gross:t.gross,status:t.status,flagged:t.flagged,flag_reason:t.flagReason,zoho_status:t.zoho_status||null,zoho_number:t.zoho_number||null,source:t.source};var{error}=await sb.from("transactions").upsert(row);if(error)log("Save error: "+error.message,"e");else showSaved();}
+async function delTxnDB(id){if(!sb||!cu)return;await sb.from("transactions").delete().eq("id",id).eq("user_id",cu.id);}
+async function updTxnDB(t){if(!sb||!cu)return;await sb.from("transactions").update({zoho_status:t.zoho_status,zoho_number:t.zoho_number,status:t.status,flagged:t.flagged,flag_reason:t.flagReason}).eq("id",t.id).eq("user_id",cu.id);}
+function showSaved(){var el=document.getElementById("save-tag");el.classList.add("show");setTimeout(function(){el.classList.remove("show");},2000);}
+
+
+// ══ AUTH FUNCTIONS ══
+function switchTab(t){
+  document.getElementById("pane-login").style.display  = t==="login"  ? "block" : "none";
+  document.getElementById("pane-signup").style.display = t==="signup" ? "block" : "none";
+  document.querySelectorAll(".atab").forEach(function(el,i){
+    el.classList.toggle("active",(i===0&&t==="login")||(i===1&&t==="signup"));
+  });
+}
+
+async function doLogin(){
+  var e   = document.getElementById("l-email").value.trim();
+  var p   = document.getElementById("l-pass").value;
+  var btn = document.getElementById("l-btn");
+  var err = document.getElementById("l-err");
+  var url = localStorage.getItem("sb_u");
+  var key = localStorage.getItem("sb_k");
+  if(!e||!p){ showErr(err,"Please enter email and password."); return; }
+  if(!url||!key){ showErr(err,"Connect Supabase first."); return; }
+  btn.disabled=true; btn.textContent="Signing in...";
+  try {
+    var res = await fetch(url+"/auth/v1/token?grant_type=password", {
+      method:"POST",
+      headers:{ "apikey":key, "Content-Type":"application/json" },
+      body: JSON.stringify({ email:e, password:p })
+    });
+    var data = await res.json();
+    if(data.error || data.error_description){
+      showErr(err, data.error_description || data.error);
+      btn.disabled=false; btn.textContent="Sign In →";
+    } else if(data.access_token){
+      // Store tokens in localStorage
+      localStorage.setItem("sb_access_token", data.access_token);
+      localStorage.setItem("sb_refresh_token", data.refresh_token||"");
+      // Set current user directly from response — no library needed
+      cu = data.user || { email: e, id: data.user_id||"" };
+      err.style.display="none";
+      btn.disabled=false; btn.textContent="Sign In →";
+      // Init sb client for database calls (non-blocking)
+      if(!sb){
+        try { sb = getSBClient(url, key); } catch(ex2){}
+      }
+      enterApp();
+    } else {
+      showErr(err, data.message || JSON.stringify(data));
+      btn.disabled=false; btn.textContent="Sign In →";
+    }
+  } catch(ex){
+    showErr(err,"Network error: "+ex.message);
+    btn.disabled=false; btn.textContent="Sign In →";
+  }
+}
+
+async function doSignup(){
+  var n   = document.getElementById("s-name").value.trim();
+  var e   = document.getElementById("s-email").value.trim();
+  var p   = document.getElementById("s-pass").value;
+  var btn = document.getElementById("s-btn");
+  var err = document.getElementById("s-err");
+  var ok  = document.getElementById("s-ok");
+  var url = localStorage.getItem("sb_u");
+  var key = localStorage.getItem("sb_k");
+  if(!n||!e||!p){ showErr(err,"Please fill all fields."); return; }
+  if(p.length<8){ showErr(err,"Password must be at least 8 characters."); return; }
+  if(!url||!key){ showErr(err,"Connect Supabase first."); return; }
+  btn.disabled=true; btn.textContent="Creating account...";
+  try {
+    var res = await fetch(url+"/auth/v1/signup", {
+      method:"POST",
+      headers:{ "apikey":key, "Content-Type":"application/json" },
+      body: JSON.stringify({ email:e, password:p, data:{ business_name:n } })
+    });
+    var data = await res.json();
+    if(data.error_description || data.error || data.msg){
+      showErr(err, data.error_description || data.msg || data.message || JSON.stringify(data));
+    } else {
+      err.style.display="none";
+      ok.style.display="block";
+      ok.textContent="✅ Account created! You can now sign in.";
+      if(!sb) sb = getSBClient(url, key);
+    }
+  } catch(ex){
+    showErr(err,"Failed: "+ex.message+" | URL used: "+url);
+  }
+  btn.disabled=false; btn.textContent="Create Account →";
+}
+
+
+async function doLogout(){
+  if(sb) await sb.auth.signOut();
+  txns=[]; renderTable(); updateStats();
+  document.getElementById("auth-screen").style.display="flex";
+  document.getElementById("app-screen").style.display="none";
+}
+
+async function chkSession(){
+  if(!sb) return;
+  var{data}=await sb.auth.getSession();
+  if(data.session){ cu=data.session.user; enterApp(); }
+}
+
+// ══ CLAUDE KEY ══
+function checkClaude(v){var ok=v.startsWith("sk-ant-")&&v.length>40;document.getElementById("cl-lbl").textContent=ok?"Claude ✓":"Claude";}
+function saveClaude(){ /* key managed by developer config */ }
+
+// ══ TABS ══
+function showTab(n){document.querySelectorAll(".section").forEach(function(s){s.classList.remove("active");});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");});document.getElementById("tab-"+n).classList.add("active");
+  if(n==="upload") renderRecentActivity();var m={upload:0,batch:1,dash:2,vat:3,manual:4,zoho:5};document.querySelectorAll(".tab")[m[n]].classList.add("active");if(n==="zoho"){renderZQ();renderZH();}}
+
+// ══ DRAG DROP ══
+var dz=document.querySelector(".upload-zone");if(dz){dz.addEventListener("dragover",function(e){e.preventDefault();});dz.addEventListener("drop",function(e){e.preventDefault();handleFiles(e.dataTransfer.files);});}
+var bdEl=document.getElementById("bd");if(bdEl){bdEl.addEventListener("dragover",function(e){e.preventDefault();bdEl.classList.add("drag-over");});bdEl.addEventListener("dragleave",function(){bdEl.classList.remove("drag-over");});bdEl.addEventListener("drop",function(e){e.preventDefault();bdEl.classList.remove("drag-over");startBatch(e.dataTransfer.files);});}
+
+// ══ ZOHO CONFIG ══
+function saveZoho(){var cfg={fn_url:document.getElementById("z-url").value.trim(),org_id:document.getElementById("z-org").value.trim(),client_id:document.getElementById("z-cid").value.trim(),client_secret:document.getElementById("z-sec").value.trim(),refresh_token:document.getElementById("z-tok").value.trim(),vat_5_percent_id:document.getElementById("z-vat").value.trim(),default_payment_account:document.getElementById("z-pay").value.trim(),default_income_account:document.getElementById("z-inc").value.trim(),access_token:""};var m=[];if(!cfg.fn_url)m.push("URL");if(!cfg.org_id)m.push("Org ID");if(!cfg.client_id)m.push("Client ID");if(!cfg.client_secret)m.push("Client Secret");if(!cfg.refresh_token)m.push("Refresh Token");if(m.length){alert("Please fill in: "+m.join(", "));return;}zCfg=cfg;localStorage.setItem("z_cfg",JSON.stringify(cfg));updZohoUI(true);log("Zoho config saved.","z");}
+function loadZoho(){try{var r=localStorage.getItem("z_cfg");if(!r)return;zCfg=JSON.parse(r);document.getElementById("z-url").value=zCfg.fn_url||"";document.getElementById("z-org").value=zCfg.org_id||"";document.getElementById("z-cid").value=zCfg.client_id||"";document.getElementById("z-sec").value=zCfg.client_secret||"";document.getElementById("z-tok").value=zCfg.refresh_token||"";document.getElementById("z-vat").value=zCfg.vat_5_percent_id||"";document.getElementById("z-pay").value=zCfg.default_payment_account||"";document.getElementById("z-inc").value=zCfg.default_income_account||"";updZohoUI(true);}catch(e){}}
+function updZohoUI(ok){document.getElementById("z-dot").className="zdot"+(ok?" ok":"");document.getElementById("z-status").textContent=ok?"Zoho Books configured — org "+(zCfg?zCfg.org_id:""):"Not configured";}
+async function testZoho(){if(!zCfg){alert("Save config first.");return;}log("Testing Zoho...","z");try{var r=await fetch(zCfg.fn_url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({invoiceData:{date:today(),vendor:"Test",description:"Test",amount:1,vat_amount:0,vat_applicable:false,type:"expense",category:"other"},zohoConfig:zCfg})});var d=await r.json();if(d.success){log("Zoho OK — "+d.zoho_number,"z");updZohoUI(true);}else{log("Zoho error: "+d.error,"e");updZohoUI(false);}}catch(e){log("Zoho failed: "+e.message,"e");}}
+
+// ══ ZOHO SYNC ══
+async function syncOne(id){if(!zCfg){alert("Configure Zoho first.");showTab("zoho");return;}var t=txns.find(function(x){return x.id===id;});if(!t)return;t.zoho_status="syncing";renderTable();renderZQ();log("Syncing: "+t.vendor+" AED "+t.amount,"z");try{var r=await fetch(zCfg.fn_url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({invoiceData:{date:t.date,vendor:t.vendor,description:t.description||"",amount:t.amount,vat_amount:t.vat.amount,vat_applicable:t.vat.applicable,type:t.type,category:t.category},zohoConfig:zCfg})});var d=await r.json();if(d.success){t.zoho_status="synced";t.zoho_id=d.zoho_id;t.zoho_number=d.zoho_number;t.zoho_type=d.record_type;t.zoho_synced_at=nowts();if(d.access_token){zCfg.access_token=d.access_token;localStorage.setItem("z_cfg",JSON.stringify(zCfg));}log("Synced: "+t.vendor+" #"+d.zoho_number,"z");zHist.unshift({date:t.date,vendor:t.vendor,amount:t.amount,zoho_number:d.zoho_number,record_type:d.record_type,synced_at:t.zoho_synced_at});}else{t.zoho_status="failed";t.zoho_error=d.error||"Unknown";log("Failed: "+t.zoho_error,"e");}}catch(e){t.zoho_status="failed";t.zoho_error=e.message;log("Error: "+e.message,"e");}await updTxnDB(t);renderTable();renderZQ();renderZH();updateStats();}
+async function bulkSync(){if(!zCfg){alert("Configure Zoho first.");showTab("zoho");return;}var pend=txns.filter(function(t){return(!t.zoho_status||t.zoho_status==="failed")&&!t.flagged;});if(!pend.length){log("Nothing pending.","z");return;}var tot=pend.length,done=0,fail=0,wrap=document.getElementById("zp-wrap"),bar=document.getElementById("zp-bar"),lbl=document.getElementById("zp-lbl");wrap.style.display="block";for(var i=0;i<pend.length;i++){lbl.textContent="Syncing "+(done+1)+" / "+tot+"...";bar.style.width=Math.round((done/tot)*100)+"%";await syncOne(pend[i].id);done++;if(pend[i].zoho_status==="failed")fail++;}bar.style.width="100%";lbl.textContent="Done — "+(done-fail)+" synced, "+fail+" failed";log("Bulk sync: "+(done-fail)+" synced, "+fail+" failed","z");setTimeout(function(){wrap.style.display="none";bar.style.width="0%";},4000);}
+function renderZQ(){var tb=document.getElementById("zq-body");var p=txns.filter(function(t){return!t.zoho_status||t.zoho_status==="failed";});if(!p.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px">All caught up!</td></tr>';return;}tb.innerHTML=p.map(function(t){var z=t.zoho_status==="syncing"?'<span style="color:var(--gold-mid);font-size:.8em">Syncing...</span>':t.zoho_status==="failed"?'<span class="badge b-zfail">✗ Failed</span>':'<span class="badge b-zpend">Pending</span>';return'<tr><td>'+esc(t.date)+'</td><td><strong>'+esc(t.vendor)+'</strong></td><td>'+cp(t.category)+'</td><td><span class="badge '+(t.type==="income"?"b-in":"b-ex")+'">'+esc(t.type)+'</span></td><td>AED '+fmt(t.amount)+'</td><td>'+z+'</td><td><button class="btn btn-gold btn-sm" onclick="syncOne(\''+t.id+'\')">Sync</button></td></tr>';}).join("");}
+function renderZH(){var tb=document.getElementById("zh-body");if(!zHist.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px">No synced records yet.</td></tr>';return;}tb.innerHTML=zHist.map(function(h){return'<tr><td>'+esc(h.date)+'</td><td>'+esc(h.vendor)+'</td><td>AED '+fmt(h.amount)+'</td><td><strong style="color:var(--gold-mid)">'+esc(h.zoho_number)+'</strong></td><td><span class="badge b-zsync">'+esc(h.record_type)+'</span></td><td style="font-size:.76em;color:var(--text-muted)">'+esc(h.synced_at)+'</td></tr>';}).join("");}
+
+// ══ SINGLE UPLOAD ══
+function handleFiles(files){if(!AK){alert("Enter your Claude API key first.");document.getElementById("cl-banner").style.display="flex";return;}for(var i=0;i<files.length;i++){(function(f){var ex=f.name.split(".").pop().toLowerCase();log("Received: "+f.name);if(ex==="pdf")rdPDF(f);else if(["jpg","jpeg","png"].indexOf(ex)!==-1)rdImg(f);else if(["xlsx","xls","csv"].indexOf(ex)!==-1)rdXLS(f);else log("Unsupported: "+ex,"w");})(files[i]);}}
+function mkProc(fn,id,msg){document.getElementById("proc-area").insertAdjacentHTML("beforeend",'<div class="proc-card" id="pc-'+id+'"><div class="proc-row"><div class="proc-name">'+esc(fn)+'</div><div class="spinner"></div></div><div class="proc-status" id="ps-'+id+'">'+(msg||"Sending to Claude...")+'</div></div>');}
+function updProc(id,m){var e=document.getElementById("ps-"+id);if(e)e.textContent=m;}
+function rmProc(id){var e=document.getElementById("pc-"+id);if(e)e.remove();}
+function mkRetry(id,fn,fn2){var e=document.getElementById("pc-"+id);if(!e)return;e.querySelector(".spinner").style.display="none";e.querySelector(".proc-status").textContent="Failed";var b=document.createElement("button");b.className="retry-btn";b.textContent="Retry";b.onclick=function(){e.remove();fn2();};e.appendChild(b);}
+async function rdPDF(file){var id=uid();mkProc(file.name,id,"Reading PDF...");try{var buf=await file.arrayBuffer(),pdf=await pdfjsLib.getDocument({data:buf}).promise,ft="";for(var p=1;p<=pdf.numPages;p++){var pg=await pdf.getPage(p),c=await pg.getTextContent();ft+=c.items.map(function(i){return i.str;}).join(" ")+"\n";}if(ft.trim().length>300){updProc(id,"Claude reading...");await clText(ft,file.name,id);}else{var pp=[];for(var g=1;g<=Math.min(pdf.numPages,4);g++){var p2=await pdf.getPage(g),vp=p2.getViewport({scale:1.8}),cv=document.createElement("canvas");cv.width=vp.width;cv.height=vp.height;await p2.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise;pp.push(cv.toDataURL("image/jpeg",.82).split(",")[1]);}updProc(id,"Claude Vision...");await clImg(pp,"image/jpeg",file.name,id);}}catch(e){log("PDF error: "+e.message,"e");mkRetry(id,file.name,function(){rdPDF(file);});}}
+async function rdImg(file){var id=uid();mkProc(file.name,id,"Converting...");var r=new FileReader();r.onload=async function(e){await clImg([e.target.result.split(",")[1]],file.type||"image/jpeg",file.name,id);};r.readAsDataURL(file);}
+async function clImg(b64s,mime,fn,pid){var cnt=b64s.map(function(b){return{type:"image",source:{type:"base64",media_type:mime,data:b}};});cnt.push({type:"text",text:singlePr()});try{var t0=Date.now(),r=await clFetch(cnt);log("Claude: "+((Date.now()-t0)/1000).toFixed(1)+"s");rmProc(pid);parseSingle(r,fn,content);}catch(e){log("Error: "+e.message,"e");mkRetry(pid,fn,function(){clImg(b64s,mime,fn,uid());});}}
+async function clText(txt,fn,pid){var prompt=singlePr()+"\n\nDOCUMENT TEXT:\n"+txt.slice(0,6000);try{var t0=Date.now(),r=await clFetch(prompt);log("Claude: "+((Date.now()-t0)/1000).toFixed(1)+"s");rmProc(pid);parseSingle(r,fn,txt);}catch(e){log("Error: "+e.message,"e");mkRetry(pid,fn,function(){clText(txt,fn,uid());});}}
+async function clFetch(content){var msgs=[{role:"user",content:content}];var res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":AK,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1024,messages:msgs})});var d=await res.json();if(d.error)throw new Error(d.error.message);return d.content[0].text;}
+function singlePr(){return'UAE accounting assistant. Extract invoice data and return ONLY JSON.\n{"date":"YYYY-MM-DD","vendor":"","description":"","amount":0,"vat_amount":0,"vat_applicable":true,"type":"income or expense","category":"sales_invoice|service_invoice|export_sales|indirect_income|purchase_supplier|utility|salary_wps|rent|marketing|travel_transport|professional_fees|maintenance_repairs|bank_charges|insurance|customs_import|other","trn":"","invoice_number":"","confidence":"high|medium|low","notes":""}\nReturn ONLY the JSON. Date fallback: '+today();}
+function parseSingle(txt,fn,origContent){try{var c=txt.replace(/```json|```/g,"").trim(),m=c.match(/\{[\s\S]*\}/);if(m)c=m[0];var d=JSON.parse(c);d.cat_label=normCat(d.category,d.type);d._origContent=origContent;log("Layer 1 complete: "+d.vendor+" AED "+d.amount+" | "+d.type);log("Running Layer 2 — verification agent...","b");showResult(d,fn,null);runVerificationAsync(d,fn);}catch(e){log("Parse error","e");}}
+
+async function runVerificationAsync(d,fn){
+  var rid=d._rid;
+  if(!rid)return;
+  try{
+    var vEl=document.getElementById("v-loading-"+rid);
+    if(vEl)vEl.innerHTML='<div style="font-size:.8em;color:#5B21B6;padding:10px 14px;background:#F5F3FF;border-radius:8px"><span class="verify-spinner"></span> Layer 2 verification running...</div>';
+    var report=await runVerificationLayer(d._origContent,d);
+    report=crossVerify(d,report);
+    d._verification=report;
+    var vWrap=document.getElementById("v-loading-"+rid);
+    if(vWrap)vWrap.outerHTML=buildVerifyUI(report,rid);
+    // Block Add to Ledger if RED
+    var addBtn=document.getElementById("add-btn-"+rid);
+    if(addBtn&&report.status==="RED"){
+      addBtn.disabled=true;addBtn.style.opacity=".4";addBtn.title="Blocked — resolve RED issues first";
+    }
+    log("Layer 2 complete: "+report.status+" (confidence: "+(report.confidence_score*100).toFixed(0)+"%)",
+        report.status==="GREEN"?"s":report.status==="RED"?"e":"w");
+  }catch(e){log("Verification error: "+e.message,"e");}
+}
+function showResult(d,fn,verifyReport){
+  var rid=uid(); d._rid=rid;
+  var conf=d.confidence==="high"?"conf-high":d.confidence==="medium"?"conf-med":"conf-low";
+  var co=CATS.map(function(c){
+    return "<option"+(d.cat_label===c?" selected":"")+" value="+JSON.stringify(c)+">"+esc(c)+"</option>";
+  }).join("");
+  var verifyHtml=verifyReport?buildVerifyUI(verifyReport,rid):"<div id='v-loading-"+rid+"'></div>";
+  var trnLine=d.trn?"<div style='font-size:.76em;color:var(--brand);margin-bottom:10px'>TRN: <strong>"+esc(d.trn)+"</strong></div>":"";
+  var noteLine=d.notes?"<div class='result-note'>"+esc(d.notes)+"</div>":"";
+  var card=document.createElement("div");
+  card.className="result-card"; card.id="rc-"+rid;
+  card.innerHTML=
+    "<div style='margin-bottom:8px'><span class='layer-tag lt-1'>LAYER 1 &mdash; EXTRACTION</span></div>"+
+    "<div class='result-fname'>"+esc(fn)+" <span class='conf "+conf+"'>"+esc(d.confidence)+" confidence</span></div>"+
+    noteLine+
+    "<div class='field-grid'>"+
+      sf("date","Date","date",d.date)+sf("type","Type","stype",d.type)+
+      sf("vendor","Vendor","text",d.vendor)+sf("amt","Amount (excl VAT)","number",d.amount)+
+      sf("vat","VAT Amount","number",d.vat_amount)+
+      "<div class='fi'><label>Category</label><select name='cat'>"+co+"</select></div>"+
+      sf("desc","Description","text",d.description)+sf("vf","VAT Applicable?","svat",d.vat_applicable?"yes":"no")+
+    "</div>"+trnLine+verifyHtml+
+    "<div class='btn-row' style='margin-top:12px'>"+
+      "<button class='btn btn-em btn-sm result-add' data-rid='"+rid+"'>Add to Ledger</button>"+
+      "<button class='btn btn-gold btn-sm result-sync' data-rid='"+rid+"'>Add + Sync Zoho</button>"+
+      "<button class='btn btn-red btn-sm result-discard' data-rid='"+rid+"'>Discard</button>"+
+    "</div>";
+  document.getElementById("res-area").appendChild(card);
+}
+
+function sf(n,l,t,v){var e=esc(v),inp;if(t==="stype")inp='<select name="'+n+'"><option value="expense"'+(v==="expense"?" selected":"")+'>Expense</option><option value="income"'+(v==="income"?" selected":"")+'>Income</option></select>';else if(t==="svat")inp='<select name="'+n+'"><option value="yes"'+(v==="yes"?" selected":"")+'>Yes — 5%</option><option value="no"'+(v==="no"?" selected":"")+'>No</option></select>';else inp='<input type="'+(t==="number"?"number":"text")+'" name="'+n+'" value="'+e+'">';return'<div class="fi"><label>'+l+'</label>'+inp+'</div>';}
+function colSingle(rid){var card=document.getElementById("rc-"+rid),g=function(n){var el=card.querySelector('[name="'+n+'"]');return el?el.value:"";};var a=parseFloat(g("amt"))||0,va=parseFloat(g("vat"))||0,vf=g("vf")==="yes";return{id:uid(),date:g("date")||today(),amount:parseFloat(a.toFixed(2)),type:g("type"),category:g("cat"),vendor:g("vendor")||"Unknown",description:g("desc"),vat:{applicable:vf,rate:vf?5:0,amount:parseFloat(va.toFixed(2))},gross:parseFloat((a+va).toFixed(2)),source:"claude",status:"pending",flagged:false,flagReason:"",zoho_status:null};}
+async function addSingle(rid){var t=colSingle(rid);txns.push(t);document.getElementById("rc-"+rid).remove();await saveTxn(t);log("Saved: "+t.vendor+" AED "+t.amount);renderTable();renderZQ();updateStats();renderRecentActivity();showTab("dash");}
+async function addAndSync(rid){var t=colSingle(rid);txns.push(t);document.getElementById("rc-"+rid).remove();await saveTxn(t);log("Saved: "+t.vendor+" AED "+t.amount);renderTable();renderZQ();updateStats();renderRecentActivity();showTab("dash");await syncOne(t.id);}
+
+// ══ EXCEL READER ══
+function rdXLS(file){log("Excel: reading "+file.name);var r=new FileReader();r.onload=async function(e){try{var wb=XLSX.read(e.target.result,{type:"binary",cellDates:true}),ws=wb.Sheets[wb.SheetNames[0]],rows=XLSX.utils.sheet_to_json(ws,{defval:""});log("Excel: "+rows.length+" rows");var all=[],bts=Math.ceil(rows.length/EXB);for(var b=0;b<bts;b++){var batch=rows.slice(b*EXB,(b+1)*EXB),pid=uid();mkProc(file.name+" (batch "+(b+1)+"/"+bts+")",pid,"Claude...");var pr="UAE accounting assistant. Return ONLY JSON array. Each: {date,vendor,description,amount,type,category,vat_applicable}. type: income=credit, expense=debit. category: sales_invoice|service_invoice|export_sales|indirect_income|purchase_supplier|utility|salary_wps|rent|marketing|travel_transport|professional_fees|maintenance_repairs|bank_charges|insurance|customs_import|other. amount: positive. date: YYYY-MM-DD.\n\nDATA:\n"+JSON.stringify(batch);try{var res=await clFetch(pr);var cl=res.replace(/```json|```/g,"").trim(),mt=cl.match(/\[[\s\S]*\]/);if(mt)cl=mt[0];var ps=JSON.parse(cl);ps.forEach(function(item){var amt=parseFloat(item.amount)||0,vf=!!item.vat_applicable,va=vf?parseFloat((amt*.05).toFixed(2)):0;if(amt<=0)return;all.push({id:uid(),date:item.date||today(),amount:parseFloat(amt.toFixed(2)),type:item.type||"expense",category:normCat(item.category,item.type),vendor:item.vendor||"Unknown",description:item.description||"",vat:{applicable:vf,rate:vf?5:0,amount:va},gross:parseFloat((amt+va).toFixed(2)),source:"excel",status:"pending",flagged:false,flagReason:"",zoho_status:null});});rmProc(pid);}catch(be){log("Batch error: "+be.message,"e");rmProc(pid);}}for(var k=0;k<all.length;k++){txns.push(all[k]);await saveTxn(all[k]);}log("Excel: "+all.length+" transactions saved");renderTable();renderZQ();updateStats();renderRecentActivity();showTab("dash");}catch(ex){log("Excel error: "+ex.message,"e");}};r.readAsBinaryString(file);}
+
+// ══ BATCH ══
+async function startBatch(files){if(!AK){alert("Enter Claude API key first.");return;}if(!files||!files.length)return;bq=[];bqTs=Date.now();for(var i=0;i<files.length;i++){var ex=files[i].name.split(".").pop().toLowerCase();if(["pdf","jpg","jpeg","png"].indexOf(ex)===-1)continue;bq.push({id:uid(),file:files[i],name:files[i].name,size:files[i].size,status:"queued",result:null,error:null});}if(!bq.length){alert("No supported files.");return;}document.getElementById("b-overview").style.display="block";document.getElementById("bq-card").style.display="block";document.getElementById("exp-bar").style.display="none";document.getElementById("seg-results").style.display="none";document.getElementById("bp-tot").textContent=bq.length;renderBQ();log("Batch: "+bq.length+" files","b");var idx=0;async function nxt(){if(idx>=bq.length)return;var item=bq[idx++];await procFile(item);updBStats();await nxt();}var w=[];for(var j=0;j<Math.min(CON,bq.length);j++)w.push(nxt());await Promise.all(w);var el=((Date.now()-bqTs)/1000).toFixed(1);log("Batch done — "+bq.filter(function(q){return q.status==="done";}).length+" done — "+el+"s","b");document.getElementById("bp-time").textContent=el+"s";document.getElementById("exp-bar").style.display="flex";renderSegs();}
+async function procFile(item){var ex=item.name.split(".").pop().toLowerCase();item.status="reading";renderBQRow(item);try{var res;if(ex==="pdf"){var buf=await item.file.arrayBuffer(),pdf=await pdfjsLib.getDocument({data:buf}).promise,ft="";for(var p=1;p<=pdf.numPages;p++){var pg=await pdf.getPage(p),c=await pg.getTextContent();ft+=c.items.map(function(i){return i.str;}).join(" ")+"\n";}if(ft.trim().length>300){item.status="ai";renderBQRow(item);res=await clFetch(bPr()+"\n\nDOCUMENT TEXT:\n"+ft.slice(0,6000));}else{var pp=[];for(var g=1;g<=Math.min(pdf.numPages,3);g++){var p2=await pdf.getPage(g),vp=p2.getViewport({scale:1.6}),cv=document.createElement("canvas");cv.width=vp.width;cv.height=vp.height;await p2.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise;pp.push(cv.toDataURL("image/jpeg",.8).split(",")[1]);}item.status="ai";renderBQRow(item);var cnt=pp.map(function(b){return{type:"image",source:{type:"base64",media_type:"image/jpeg",data:b}};});cnt.push({type:"text",text:bPr()});res=await clFetch(cnt);}}else{var b64=await f2b64(item.file);item.status="ai";renderBQRow(item);res=await clFetch([{type:"image",source:{type:"base64",media_type:item.file.type||"image/jpeg",data:b64}},{type:"text",text:bPr()}]);}var cl=res.replace(/```json|```/g,"").trim(),m=cl.match(/\{[\s\S]*\}/);if(m)cl=m[0];item.result=JSON.parse(cl);item.result.cat_label=normCat(item.result.category,item.result.type);item.result.src_file=item.name;item.status="done";}catch(e){item.status="failed";item.error=e.message;}renderBQRow(item);}
+function f2b64(file){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(e){res(e.target.result.split(",")[1]);};r.onerror=rej;r.readAsDataURL(file);});}
+function bPr(){return'UAE accounting assistant. Extract invoice/receipt data and return ONLY a JSON object.\n{"date":"YYYY-MM-DD","vendor":"","description":"","amount":0,"vat_amount":0,"vat_applicable":true,"type":"income or expense","category":"sales_invoice|service_invoice|export_sales|indirect_income|purchase_supplier|utility|salary_wps|rent|marketing|travel_transport|professional_fees|maintenance_repairs|bank_charges|insurance|customs_import|other","invoice_number":"","trn":"","confidence":"high|medium|low","notes":""}\nReturn ONLY the JSON. Date fallback: '+today();}
+function qBadge(item){var L={queued:"Queued",reading:"Reading…",ai:"Claude…",done:"Done ✓",failed:"Failed ✗"},C={queued:"qb-q",reading:"qb-r",ai:"qb-a",done:"qb-d",failed:"qb-f"},sp=(item.status==="reading"||item.status==="ai")?'<div class="mini-spin"></div>':"";return'<span class="qbadge '+C[item.status]+'">'+sp+L[item.status]+'</span>';}
+function qRow(item,i){var r=item.result;return'<tr><td style="color:var(--text-muted)">'+(i+1)+'</td><td style="font-size:.79em;max-width:140px;word-break:break-all">'+esc(item.name)+'</td><td style="color:var(--text-muted)">'+Math.round(item.size/1024)+' KB</td><td>'+qBadge(item)+'</td><td>'+(r?cp(r.cat_label):"—")+'</td><td>'+(r?esc((r.vendor||"").slice(0,22)):"—")+'</td><td>'+(r?fmt(r.amount):"—")+'</td><td>'+(r?'<span class="badge '+(r.type==="income"?"b-in":"b-ex")+'">'+esc(r.type)+'</span>':"—")+'</td><td>'+(r?'<span class="conf conf-'+(r.confidence==="high"?"high":r.confidence==="medium"?"med":"low")+'">'+esc(r.confidence)+'</span>':(item.error?'<span style="color:var(--red);font-size:.74em">'+esc((item.error||"").slice(0,28))+'</span>':"—"))+'</td></tr>';}
+function renderBQ(){var tb=document.getElementById("q-body");tb.innerHTML=bq.map(function(item,i){return qRow(item,i);}).join("");}
+function renderBQRow(item){var i=bq.indexOf(item);var tb=document.getElementById("q-body");if(!tb)return;var rows=tb.querySelectorAll("tr");if(rows[i])rows[i].outerHTML=qRow(item,i);}
+function updBStats(){var proc=bq.filter(function(q){return q.status==="reading"||q.status==="ai";}).length;var done=bq.filter(function(q){return q.status==="done";}).length;var fail=bq.filter(function(q){return q.status==="failed";}).length;var pct=Math.round(((done+fail)/bq.length)*100);document.getElementById("bp-proc").textContent=proc;document.getElementById("bp-done").textContent=done;document.getElementById("bp-fail").textContent=fail;document.getElementById("prog-bar").style.width=pct+"%";document.getElementById("prog-lbl").textContent=pct+"% — "+done+"/"+bq.length+" processed";document.getElementById("bp-time").textContent=((Date.now()-bqTs)/1000).toFixed(0)+"s";}
+function renderSegs(){var con=document.getElementById("seg-container");var done=bq.filter(function(q){return q.status==="done"&&q.result;});if(!done.length){con.innerHTML='<p style="color:var(--text-muted)">No results.</p>';return;}var groups={};CATS.forEach(function(c){groups[c]=[];});done.forEach(function(item){groups[item.result.cat_label].push(item.result);});var html="";CATS.forEach(function(cat){var rows=groups[cat];if(!rows.length)return;var c=CCLR[cat],tot=rows.reduce(function(s,r){return s+(r.amount||0);},0),vTot=rows.reduce(function(s,r){return s+(r.vat_amount||0);},0);html+='<div class="seg-hdr" style="background:'+c.bg+';color:'+c.hdr+'"><span>'+esc(cat)+'</span><span style="margin-left:auto;font-size:.82em">'+rows.length+' invoice'+(rows.length>1?"s":"")+'  ·  AED '+fmt(tot)+'</span></div>';html+='<div class="seg-wrap"><table class="seg"><thead><tr><th style="background:'+c.hdr+'">Date</th><th style="background:'+c.hdr+'">Vendor</th><th style="background:'+c.hdr+'">Description</th><th style="background:'+c.hdr+'">Type</th><th style="background:'+c.hdr+'">Net AED</th><th style="background:'+c.hdr+'">VAT AED</th><th style="background:'+c.hdr+'">Gross AED</th><th style="background:'+c.hdr+'">Conf.</th></tr></thead><tbody>';rows.forEach(function(r){var gr=(r.amount||0)+(r.vat_amount||0);html+='<tr><td>'+esc(r.date)+'</td><td><strong>'+esc(r.vendor)+'</strong></td><td style="color:var(--text-muted);font-size:.77em">'+esc((r.description||"").slice(0,36))+'</td><td><span class="badge '+(r.type==="income"?"b-in":"b-ex")+'">'+esc(r.type)+'</span></td><td><strong>'+fmt(r.amount)+'</strong></td><td>'+(r.vat_applicable?fmt(r.vat_amount):"—")+'</td><td>'+fmt(gr)+'</td><td><span class="conf conf-'+(r.confidence==="high"?"high":r.confidence==="medium"?"med":"low")+'">'+esc(r.confidence)+'</span></td></tr>';});html+='<tr class="tr"><td colspan="4" style="text-align:right">TOTAL</td><td>'+fmt(tot)+'</td><td>'+fmt(vTot)+'</td><td>'+fmt(tot+vTot)+'</td><td></td></tr></tbody></table></div>';});con.innerHTML=html;document.getElementById("seg-results").style.display="block";}
+function exportExcel(){var done=bq.filter(function(q){return q.status==="done"&&q.result;});if(!done.length){alert("No results.");return;}var wb=XLSX.utils.book_new();var sd=[["Date","Vendor","Description","Invoice #","TRN","Type","Category","Net AED","VAT AED","Gross AED","VAT Applicable","Confidence","Source File"]];done.forEach(function(item){var r=item.result;sd.push([r.date,r.vendor,r.description,r.invoice_number||"",r.trn||"",r.type,r.cat_label,r.amount,r.vat_applicable?r.vat_amount:0,(r.amount||0)+(r.vat_applicable?(r.vat_amount||0):0),r.vat_applicable?"Yes":"No",r.confidence,r.src_file]);});var dr=done.length+1;sd.push(["TOTAL","","","","","","",{f:"SUM(H2:H"+dr+")"},{f:"SUM(I2:I"+dr+")"},{f:"SUM(J2:J"+dr+")"},"","",""]);var ws0=XLSX.utils.aoa_to_sheet(sd);ws0["!cols"]=[{wch:12},{wch:28},{wch:36},{wch:14},{wch:18},{wch:10},{wch:22},{wch:12},{wch:12},{wch:14},{wch:14},{wch:11},{wch:28}];XLSX.utils.book_append_sheet(wb,ws0,"All Transactions");var groups={};CATS.forEach(function(c){groups[c]=[];});done.forEach(function(item){groups[item.result.cat_label].push(item.result);});CATS.forEach(function(cat){var rows=groups[cat];if(!rows.length)return;var cs=[["Date","Vendor","Description","Type","Net AED","VAT AED","Gross AED","Confidence"]];rows.forEach(function(r){cs.push([r.date,r.vendor,r.description,r.type,r.amount,r.vat_applicable?r.vat_amount:0,(r.amount||0)+(r.vat_applicable?(r.vat_amount||0):0),r.confidence]);});var dr2=rows.length+1;cs.push(["TOTAL","","","",{f:"SUM(E2:E"+dr2+")"},{f:"SUM(F2:F"+dr2+")"},{f:"SUM(G2:G"+dr2+")"},""]);;XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(cs),cat.slice(0,31));});XLSX.writeFile(wb,"hisab_batch_"+today()+".xlsx");log("Excel exported — "+wb.SheetNames.length+" sheets","b");}
+function exportJSON(){var done=bq.filter(function(q){return q.status==="done"&&q.result;});if(!done.length){alert("No results.");return;}var groups={};CATS.forEach(function(c){groups[c]=[];});done.forEach(function(item){var r=item.result;groups[r.cat_label].push({date:r.date,vendor:r.vendor,description:r.description,invoice_number:r.invoice_number||"",type:r.type,category:r.cat_label,net_amount:r.amount,vat_amount:r.vat_applicable?r.vat_amount:0,gross:(r.amount||0)+(r.vat_applicable?(r.vat_amount||0):0),vat_applicable:r.vat_applicable,confidence:r.confidence,source_file:r.src_file});});CATS.forEach(function(c){if(!groups[c].length)delete groups[c];});var out={exported_at:new Date().toISOString(),total_files:done.length,invoices_by_category:groups};var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(out,null,2)],{type:"application/json"}));a.download="hisab_batch_"+today()+".json";a.click();log("JSON exported","b");}
+async function addBatchToLedger(){var done=bq.filter(function(q){return q.status==="done"&&q.result;});for(var i=0;i<done.length;i++){var r=done[i].result;var va=r.vat_applicable?(r.vat_amount||0):0;var t={id:uid(),date:r.date||today(),amount:r.amount||0,type:r.type,category:r.cat_label,vendor:r.vendor||"Unknown",description:r.description||"",vat:{applicable:r.vat_applicable,rate:r.vat_applicable?5:0,amount:va},gross:(r.amount||0)+va,source:"batch",status:"pending",flagged:false,flagReason:"",zoho_status:null};txns.push(t);await saveTxn(t);}renderTable();renderZQ();updateStats();log("Added "+done.length+" batch transactions to ledger","b");showTab("dash");}
+async function addBatchAndSync(){await addBatchToLedger();await bulkSync();}
+function clearBatch(){if(!confirm("Clear batch results?"))return;bq=[];document.getElementById("b-overview").style.display="none";document.getElementById("bq-card").style.display="none";document.getElementById("exp-bar").style.display="none";document.getElementById("seg-results").style.display="none";document.getElementById("q-body").innerHTML="";log("Batch cleared","b");}
+
+
+// ══ RECENT TRANSACTIONS ON UPLOAD TAB ══
+function renderRecent() {
+  var list = document.getElementById("recent-list");
+  var qs   = document.getElementById("quick-stats");
+  if (!list) return;
+
+  if (!txns.length) {
+    list.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-muted);font-size:.84em"><div style="font-size:2em;margin-bottom:10px">📄</div>No transactions yet — upload your first invoice above</div>';
+    if (qs) qs.style.display = "none";
+    return;
+  }
+
+  // Show quick stats
+  if (qs) {
+    var now   = new Date();
+    var month = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
+    var mInc  = txns.filter(function(t){return t.type==="income"&&t.date&&t.date.startsWith(month);}).reduce(function(s,t){return s+t.amount;},0);
+    var mExp  = txns.filter(function(t){return t.type==="expense"&&t.date&&t.date.startsWith(month);}).reduce(function(s,t){return s+t.amount;},0);
+    var vat   = buildVAT();
+    document.getElementById("qs-inc").textContent = "AED "+Math.round(mInc).toLocaleString();
+    document.getElementById("qs-exp").textContent = "AED "+Math.round(mExp).toLocaleString();
+    document.getElementById("qs-vat").textContent = "AED "+vat.net.toLocaleString();
+    qs.style.display = "block";
+  }
+
+  // Show last 6 transactions
+  var recent = txns.slice().reverse().slice(0, 6);
+  list.innerHTML = recent.map(function(t) {
+    var cc = CCLR[t.category] || CCLR["Other"];
+    var amtColor = t.type === "income" ? "color:var(--emerald);font-weight:700" : "color:var(--red);font-weight:700";
+    var amtPrefix = t.type === "income" ? "+" : "−";
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:.84em;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(t.vendor) + '</div>' +
+        '<div style="font-size:.74em;color:var(--text-muted);margin-top:1px">' + esc(t.date) + ' &nbsp;·&nbsp; <span class="cp ' + cc.cls + '">' + esc(t.category) + '</span></div>' +
+      '</div>' +
+      '<div style="' + amtColor + ';font-size:.9em;white-space:nowrap">' + amtPrefix + ' AED ' + fmt(t.amount) + '</div>' +
+    '</div>';
+  }).join("") +
+  (txns.length > 6 ? '<div style="text-align:center;padding:10px 0;font-size:.78em;color:var(--text-muted)">' + (txns.length - 6) + ' more — <span onclick="showTab(\'dash\')" style="color:var(--brand);cursor:pointer;font-weight:600">View All</span></div>' : '');
+}
+
+// ══ LEDGER ══
+function renderTable(){ renderRecent();
+var tb=document.getElementById("txn-body");if(!txns.length){tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:24px">No transactions yet.</td></tr>';return;}tb.innerHTML=txns.slice().reverse().map(function(t){var zc;if(t.zoho_status==="synced")zc='<span class="badge b-zsync">✓ '+esc(t.zoho_number||"Synced")+'</span>';else if(t.zoho_status==="syncing")zc='<span style="color:var(--gold-mid);font-size:.8em">Syncing...</span>';else if(t.zoho_status==="failed")zc='<span class="badge b-zfail">✗</span>';else zc='<button class="btn btn-gold btn-sm" onclick="syncOne(\''+t.id+'\')">Sync</button>';var cc=CCLR[t.category]||CCLR["Other"];return'<tr><td>'+esc(t.date)+'</td><td><strong>'+esc(t.vendor.slice(0,22))+'</strong></td><td><span class="badge '+(t.type==="income"?"b-in":"b-ex")+'">'+esc(t.type)+'</span></td><td><span class="cp '+cc.cls+'">'+esc(t.category)+'</span></td><td><strong>'+fmt(t.amount)+'</strong></td><td>'+(t.vat.applicable?fmt(t.vat.amount):"—")+'</td><td>'+fmt(t.gross)+'</td><td><span class="badge '+(t.flagged?"b-fl":"b-ok")+'">'+(t.flagged?"⚠ "+esc(t.flagReason.slice(0,18)):esc(t.status))+'</span></td><td>'+zc+'</td><td><button class="btn btn-red btn-sm" onclick="delTxn(\''+t.id+'\')">✕</button></td></tr>';}).join("");}
+
+function updateStats(){var inc=txns.filter(function(t){return t.type==="income";}).reduce(function(s,t){return s+t.amount;},0);var exp=txns.filter(function(t){return t.type==="expense";}).reduce(function(s,t){return s+t.amount;},0);var v=buildVAT();document.getElementById("s-inc").textContent="AED "+Math.round(inc).toLocaleString();document.getElementById("s-exp").textContent="AED "+Math.round(exp).toLocaleString();document.getElementById("s-profit").textContent="AED "+Math.round(inc-exp).toLocaleString();document.getElementById("s-cnt").textContent=txns.length;document.getElementById("s-vat").textContent="AED "+v.net.toLocaleString();document.getElementById("s-flag").textContent=txns.filter(function(t){return t.flagged;}).length;document.getElementById("s-synced").textContent=txns.filter(function(t){return t.zoho_status==="synced";}).length;document.getElementById("s-sfail").textContent=txns.filter(function(t){return t.zoho_status==="failed";}).length;}
+function buildVAT(){var out=txns.filter(function(t){return t.type==="income"&&t.vat.applicable;}).reduce(function(s,t){return s+t.vat.amount;},0);var inp=txns.filter(function(t){return t.type==="expense"&&t.vat.applicable;}).reduce(function(s,t){return s+t.vat.amount;},0);return{out:parseFloat(out.toFixed(2)),inp:parseFloat(inp.toFixed(2)),net:parseFloat((out-inp).toFixed(2))};}
+function calcVAT(){var trn=document.getElementById("c-trn").value,period=document.getElementById("c-period").value;var inc=txns.filter(function(t){return t.type==="income";}).reduce(function(s,t){return s+t.amount;},0);var v=buildVAT();var dls={Q1:"2026-04-28",Q2:"2026-07-28",Q3:"2026-10-28",Q4:"2027-01-28"};document.getElementById("v-trn").textContent=esc(trn);document.getElementById("v-period").textContent=esc(period);document.getElementById("v-sales").textContent="AED "+Math.round(inc).toLocaleString();document.getElementById("v-out").textContent="AED "+v.out.toLocaleString();document.getElementById("v-in").textContent="AED "+v.inp.toLocaleString();document.getElementById("v-net").textContent="AED "+v.net.toLocaleString();document.getElementById("v-dl").textContent=dls[period.split("-")[0]]||"Check FTA";}
+function runAgent(){if(!txns.length){log("No transactions","w");return;}var seen={},flags=0;txns.forEach(function(t){t.flagged=false;t.flagReason="";var issues=[];var k=t.date+"_"+t.amount+"_"+t.vendor+"_"+t.category;if(seen[k])issues.push("Possible duplicate");seen[k]=true;if(t.amount>50000)issues.push("Large amount");if(!t.vendor||t.vendor==="Unknown")issues.push("Missing vendor");if(new Date(t.date+"T00:00:00")>new Date(today()+"T00:00:00"))issues.push("Future date");if(t.amount<=0)issues.push("Zero amount");if(issues.length){t.flagged=true;t.flagReason=issues.join(", ");t.status="flagged";flags++;}else t.status="approved";});log("Validation: "+(txns.length-flags)+" approved, "+flags+" flagged");renderTable();renderZQ();updateStats();}
+async function addManual(){var date=document.getElementById("m-date").value,type=document.getElementById("m-type").value,amt=parseFloat(document.getElementById("m-amount").value),cat=document.getElementById("m-cat").value,vendor=document.getElementById("m-vendor").value.trim(),desc=document.getElementById("m-desc").value.trim(),vf=document.getElementById("m-vat").value==="yes";if(!date||isNaN(amt)||amt<=0||!vendor){alert("Fill Date, Amount, Vendor.");return;}var va=vf?parseFloat((amt*.05).toFixed(2)):0;var t={id:uid(),date:date,amount:parseFloat(amt.toFixed(2)),type:type,category:cat,vendor:vendor,description:desc,vat:{applicable:vf,rate:vf?5:0,amount:va},gross:parseFloat((amt+va).toFixed(2)),source:"manual",status:"pending",flagged:false,flagReason:"",zoho_status:null};txns.push(t);await saveTxn(t);log("Saved: "+vendor+" AED "+amt);renderTable();renderZQ();updateStats();renderRecentActivity();showTab("dash");document.getElementById("m-amount").value="";document.getElementById("m-vendor").value="";document.getElementById("m-desc").value="";document.getElementById("m-date").value=today();}
+async function delTxn(id){if(!confirm("Delete this transaction?"))return;await delTxnDB(id);txns=txns.filter(function(t){return t.id!==id;});renderTable();renderZQ();updateStats();}
+async function clearAll(){if(!txns.length||!confirm("Clear ALL transactions from Supabase? Cannot be undone."))return;if(sb&&cu)await sb.from("transactions").delete().eq("user_id",cu.id);txns=[];zHist=[];renderTable();renderZQ();renderZH();updateStats();log("All transactions cleared from Supabase");}
+function expCSV(){var rows=[["Date","Vendor","Description","Type","Category","Net","VAT","Gross","Status","Zoho"]];txns.forEach(function(t){rows.push([t.date,t.vendor,t.description,t.type,t.category,t.amount,t.vat.amount,t.gross,t.status,t.zoho_number||""]);});var csv=rows.map(function(r){return r.map(function(c){return'"'+(c||"").toString().replace(/"/g,'""')+'"';}).join(",");}).join("\n");var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="hisab_ledger_"+today()+".csv";a.click();}
+async function loadSample(){txns=[];var s=[{date:"2026-04-02",type:"income",category:"Sales Invoice",vendor:"Restaurant Dine-in",description:"Dine-in sales week 1",amount:18500,va:925},{date:"2026-04-05",type:"expense",category:"Purchase/Expense Bill",vendor:"Al Maya Wholesale",description:"Food supplies",amount:4200,va:210},{date:"2026-04-10",type:"expense",category:"Salary/WPS",vendor:"Staff WPS April",description:"4 staff salaries",amount:12000,va:0},{date:"2026-04-12",type:"expense",category:"Rent",vendor:"Al Ghurair Properties",description:"Restaurant rent April",amount:9500,va:475},{date:"2026-04-25",type:"expense",category:"Utility Bill",vendor:"DEWA",description:"Electricity April",amount:1800,va:90}];for(var i=0;i<s.length;i++){var x=s[i];var t={id:uid(),date:x.date,amount:x.amount,type:x.type,category:x.category,vendor:x.vendor,description:x.description,vat:{applicable:x.va>0,rate:x.va>0?5:0,amount:x.va},gross:x.amount+x.va,source:"sample",status:"pending",flagged:false,flagReason:"",zoho_status:null};txns.push(t);await saveTxn(t);}log("Sample data loaded and saved");renderTable();renderZQ();updateStats();renderRecentActivity();showTab("dash");}
+
+
+// ── RECENT ACTIVITY (Single Upload tab) ──────────────────────────────────────
+function renderRecentActivity() {
+  var el = document.getElementById("recent-activity-body");
+  if (!el) return;
+  if (!txns || !txns.length) {
+    el.innerHTML =
+      "<div style='text-align:center;padding:28px 0;color:var(--text-muted);font-size:.84em'>" +
+      "<div style='font-size:2em;margin-bottom:10px'>📋</div>" +
+      "No transactions yet — upload your first invoice above</div>";
+    return;
+  }
+  var recent = txns.slice().reverse().slice(0, 5);
+  el.innerHTML = recent.map(function(t) {
+    var cc = CCLR[t.category] || CCLR["Other"];
+    var amtColor = t.type === "income" ? "color:var(--emerald)" : "color:var(--red)";
+    var amtSign  = t.type === "income" ? "+" : "−";
+    var statusDot = t.flagged
+      ? '<span style="width:7px;height:7px;border-radius:50%;background:#D97706;display:inline-block;flex-shrink:0"></span>'
+      : t.status === "approved"
+        ? '<span style="width:7px;height:7px;border-radius:50%;background:var(--emerald);display:inline-block;flex-shrink:0"></span>'
+        : '<span style="width:7px;height:7px;border-radius:50%;background:var(--border-mid);display:inline-block;flex-shrink:0"></span>';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">' +
+      '<div style="width:36px;height:36px;border-radius:9px;background:' + cc.bg + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.78em;font-weight:700;color:' + cc.hdr + '">' +
+        (t.vendor || "?").charAt(0).toUpperCase() +
+      '</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:.85em;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(t.vendor) + '</div>' +
+        '<div style="font-size:.74em;color:var(--text-muted);margin-top:1px;display:flex;align-items:center;gap:6px">' +
+          '<span class="cp ' + cc.cls + '" style="font-size:.68em">' + esc(t.category) + '</span>' +
+          '<span>' + esc(t.date) + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div style="text-align:right;flex-shrink:0">' +
+        '<div style="font-size:.88em;font-weight:700;' + amtColor + '">' + amtSign + ' AED ' + fmt(t.amount) + '</div>' +
+        '<div style="font-size:.72em;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:4px;justify-content:flex-end">' + statusDot + esc(t.status) + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join("") +
+  (txns.length > 5
+    ? "<div style='text-align:center;padding:10px 0;font-size:.78em;color:var(--text-muted);cursor:pointer' onclick='showTab(&quot;dash&quot;)'> + " + (txns.length - 5) + " more transactions — view all in Dashboard</div>"
+    : '');
+}
+
+// ── RESULT CARD DELEGATED EVENTS ─────────────────────────────────────────────
+document.addEventListener("click", function(e) {
+  var addEl     = e.target.closest(".result-add");
+  var syncEl    = e.target.closest(".result-sync");
+  var discardEl = e.target.closest(".result-discard");
+  if (addEl)     { addSingle(addEl.dataset.rid); }
+  if (syncEl)    { addAndSync(syncEl.dataset.rid); }
+  if (discardEl) { var c=document.getElementById("rc-"+discardEl.dataset.rid); if(c)c.remove(); }
+});
+
+function log(msg,type){var el=document.getElementById("log"),ts=new Date().toLocaleTimeString();var cls=type==="w"?"w":type==="e"?"e":type==="z"?"z":type==="b"?"b":type==="s"?"s":"";el.innerHTML+='<span class="'+cls+'">['+ts+'] '+esc(msg)+'</span><br>';el.scrollTop=el.scrollHeight;}
+</script>
+</body>
+</html>
